@@ -232,14 +232,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
     <label>Project Name</label>
     <input type="text" id="projName" value="New Project" style="min-width:200px">
   </div>
-  <div class="config-group">
-    <label>Number of Floors</label>
-    <select id="floors" onchange="changeFloors()">
-      <option value="1">1 Floor</option>
-      <option value="2" selected>2 Floors</option>
-      <option value="3">3 Floors</option>
-    </select>
-  </div>
+  <input type="hidden" id="floors" value="2">
   <div class="config-group">
     <label>Project Start Date</label>
     <input type="date" id="startDate" value="2026-01-01" onchange="changeStart()">

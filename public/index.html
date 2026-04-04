@@ -130,6 +130,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 /* EXPORT MODAL */
 .export-area{width:100%;height:200px;font-family:'Courier New',monospace;font-size:10px;border:1px solid var(--border);border-radius:6px;padding:8px;resize:none}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -147,6 +148,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
     <button class="btn btn-outline" onclick="redo()" id="redoBtn" disabled style="opacity:.4;padding:7px 10px" title="Redo (Ctrl+Y)">↪</button>
     <span style="width:1px;height:20px;background:rgba(255,255,255,.2)"></span>
     <button class="btn btn-green" onclick="openAddTask()" style="background:#059669">+ Add Task</button>
+    <button class="btn btn-outline" onclick="exportExcel()">📊 Excel</button>
     <button class="btn btn-outline" onclick="exportCSV()">CSV</button>
     <button class="btn btn-primary" onclick="exportGanttHTML()">Export Gantt</button>
   </div>
@@ -985,6 +987,120 @@ function changeStart(){
 // ============================================================
 // EXPORT
 // ============================================================
+// ============================================================
+// EXPORT EXCEL (Buildertrend format)
+// ============================================================
+function exportExcel(){
+  calcAll();
+  const projName=document.getElementById('projName').value||'Project';
+  const sorted=[...tasks].sort((a,b)=>computed[a.id].s-computed[b.id].s||computed[a.id].e-computed[b.id].e);
+  
+  const wb=XLSX.utils.book_new();
+  const rows=[];
+  
+  // Row 1: Title
+  rows.push([`Schedule - ${projName}`]);
+  // Row 2: Address
+  rows.push(['7422 Mountjoy Dr, Huntington Beach, CA 92648-1231']);
+  // Row 3: Phone
+  rows.push(['714-841-5285']);
+  // Row 4: Empty
+  rows.push([]);
+  // Row 5: Headers
+  rows.push(['ID #','Title','Complete','Phase','Duration','Start','End']);
+  
+  // Data rows sorted by date
+  sorted.forEach(t=>{
+    const{s,e}=computed[t.id];
+    const phaseName=PHASES[t.ph]||'--';
+    const startStr=s.toLocaleDateString('en',{month:'short',day:'2-digit',year:'numeric'});
+    const endStr=e.toLocaleDateString('en',{month:'short',day:'2-digit',year:'numeric'});
+    const durStr=t.d>1?`${t.d} days`:'1 day';
+    rows.push([t.id, t.t, '0%', '--', durStr, startStr, endStr]);
+  });
+  
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  
+  // Column widths matching the original
+  ws['!cols']=[
+    {wch:8},   // A: ID
+    {wch:45},  // B: Title
+    {wch:12},  // C: Complete
+    {wch:12},  // D: Phase
+    {wch:15},  // E: Duration
+    {wch:16},  // F: Start
+    {wch:16},  // G: End
+  ];
+  
+  // Row heights
+  ws['!rows']=[
+    {hpt:30},  // Row 1: Title
+    {hpt:16},  // Row 2: Address
+    {hpt:20},  // Row 3: Phone
+    {hpt:15},  // Row 4: Empty
+    {hpt:28},  // Row 5: Header
+  ];
+  // Data rows height
+  for(let i=5;i<5+sorted.length;i++){
+    if(!ws['!rows'][i])ws['!rows'][i]={};
+    ws['!rows'][i].hpt=32;
+  }
+  
+  // Merge title rows
+  ws['!merges']=[
+    {s:{r:0,c:0},e:{r:0,c:6}},  // Row 1
+    {s:{r:1,c:0},e:{r:1,c:6}},  // Row 2
+    {s:{r:2,c:0},e:{r:2,c:6}},  // Row 3
+  ];
+  
+  // Styling - Title
+  const titleStyle={font:{name:'Arial',sz:16,bold:true,color:{rgb:'2D3748'}}};
+  const subStyle={font:{name:'Arial',sz:9,color:{rgb:'718096'}}};
+  const hdrStyle={font:{name:'Arial',sz:9,bold:true,color:{rgb:'4A5568'}},alignment:{horizontal:'center',vertical:'center'},border:{bottom:{style:'medium',color:{rgb:'CBD5E0'}}}};
+  const titleBlue={font:{name:'Arial',sz:10,color:{rgb:'4A90D9'}},alignment:{vertical:'center'}};
+  const dataCenter={font:{name:'Arial',sz:10,color:{rgb:'4A5568'}},alignment:{horizontal:'center',vertical:'center'}};
+  const idStyle={font:{name:'Arial',sz:10,color:{rgb:'2D3748'}},alignment:{horizontal:'center',vertical:'center'}};
+  const completeGreen={font:{name:'Arial',sz:10,color:{rgb:'38A169'}},alignment:{horizontal:'center',vertical:'center'}};
+  const completeGray={font:{name:'Arial',sz:10,color:{rgb:'A0AEC0'}},alignment:{horizontal:'center',vertical:'center'}};
+  const phaseGray={font:{name:'Arial',sz:10,color:{rgb:'A0AEC0'}},alignment:{horizontal:'center',vertical:'center'}};
+  const altFill={fill:{fgColor:{rgb:'F7FAFC'}}};
+  
+  // Apply styles
+  function setStyle(ref, style){
+    if(!ws[ref])ws[ref]={v:'',t:'s'};
+    ws[ref].s=style;
+  }
+  
+  setStyle('A1',titleStyle);
+  setStyle('A2',subStyle);
+  setStyle('A3',subStyle);
+  
+  // Header row (row 5 = index 4)
+  ['A5','B5','C5','D5','E5','F5','G5'].forEach(ref=>{
+    if(ws[ref])ws[ref].s=hdrStyle;
+  });
+  
+  // Data rows
+  sorted.forEach((t,i)=>{
+    const r=i+6; // Excel row (1-indexed)
+    const isAlt=i%2===1;
+    const base=isAlt?{...altFill}:{};
+    
+    const aRef=`A${r}`,bRef=`B${r}`,cRef=`C${r}`,dRef=`D${r}`,eRef=`E${r}`,fRef=`F${r}`,gRef=`G${r}`;
+    
+    if(ws[aRef])ws[aRef].s={...idStyle,...base};
+    if(ws[bRef])ws[bRef].s={...titleBlue,...base};
+    if(ws[cRef])ws[cRef].s={...completeGray,...base};
+    if(ws[dRef])ws[dRef].s={...phaseGray,...base};
+    if(ws[eRef])ws[eRef].s={...dataCenter,...base};
+    if(ws[fRef])ws[fRef].s={...dataCenter,...base};
+    if(ws[gRef])ws[gRef].s={...dataCenter,...base};
+  });
+  
+  XLSX.utils.book_append_sheet(wb,ws,`Schedule - ${projName.substring(0,25)}`);
+  XLSX.writeFile(wb,`Schedule_List_${projName.replace(/\s/g,'_')}.xlsx`);
+}
+
 function exportCSV(){
   calcAll();
   const sorted=[...tasks].sort((a,b)=>computed[a.id].s-computed[b.id].s);

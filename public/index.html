@@ -283,6 +283,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 
 <div class="main">
   <div class="task-list">
+    <div style="padding:6px 8px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <input type="text" id="taskSearch" placeholder="🔍 Search tasks..." oninput="applySearch()" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;outline:none">
+    </div>
     <div class="task-list-header">
       <span>#</span><span>Title</span><span>Start</span><span>Days</span>
     </div>
@@ -687,6 +690,7 @@ function recalcAll(){
 let PPD=20;
 const ROW_H=36,BAR_H=24,BAR_TOP=(ROW_H-BAR_H)/2;
 let activeFilter='';
+let searchTerm='';
 const TODAY=new Date(2026,3,3);
 
 function render(){
@@ -710,13 +714,15 @@ function render(){
   const TW=Math.ceil((dMax-dMin)/864e5)*PPD;
   function dX(d){return Math.round((d-dMin)/864e5*PPD)}
 
-  // Task list with filter support
+  // Task list with filter and search support
   const tlb=document.getElementById('taskListBody');
   let lh='';
   sorted.forEach(t=>{
     const{s,e}=computed[t.id];
     const filtered=activeFilter&&t.ph!==activeFilter;
-    const dimStyle=filtered?'opacity:.3;':'';
+    const searched=searchTerm&&!t.t.toLowerCase().includes(searchTerm);
+    const dim=filtered||searched;
+    const dimStyle=dim?'opacity:.15;':'';
     lh+=`<div class="task-row" onclick="openEdit(${t.id})" style="${dimStyle}">
       <span class="tid">${t.id}</span>
       <span class="tname"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${PCOL[t.ph]||'#888'};margin-right:5px;flex-shrink:0;vertical-align:middle"></span>${t.t}</span>
@@ -770,7 +776,8 @@ function render(){
     const barY=rowY+BAR_TOP;
     const col=PCOL[t.ph]||'#888';
     const filtered=activeFilter&&t.ph!==activeFilter;
-    const dimBar=filtered?'opacity:.15;':'';
+    const searched=searchTerm&&!t.t.toLowerCase().includes(searchTerm);
+    const dimBar=(filtered||searched)?'opacity:.15;':'';
     
     bb+=`<div class="brow${idx%2?' alt':''}" style="top:${rowY}px;height:${ROW_H}px;width:${TW}px"></div>`;
     
@@ -1133,6 +1140,11 @@ function goToDate(){
 // ============================================================
 function applyFilter(){
   activeFilter=document.getElementById('phaseFilter').value;
+  render();
+}
+
+function applySearch(){
+  searchTerm=document.getElementById('taskSearch').value.toLowerCase().trim();
   render();
 }
 

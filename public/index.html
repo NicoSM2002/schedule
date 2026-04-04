@@ -1163,7 +1163,7 @@ function addNewTask(){
   // If no dates and no predecessor, task won't have a position — that's okay, 
   // it will default to project start and user can connect it later
   
-  const newId=Math.max(...tasks.map(t=>t.id))+1;
+  const newId=tasks.length?Math.max(...tasks.map(t=>t.id))+1:1;
   
   const newTask={
     id:newId,
@@ -2069,7 +2069,7 @@ function executeAction(act){
   switch(act.type){
     case 'add':{
       saveState();
-      const newId=Math.max(...tasks.map(t=>t.id))+1;
+      const newId=tasks.length?Math.max(...tasks.map(t=>t.id))+1:1;
       let fs=null,fe=null,dur=act.duration||5;
       if(act.start&&act.end){
         fs=new Date(act.start+'T12:00:00');

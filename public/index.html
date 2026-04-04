@@ -850,13 +850,16 @@ function render(){
     const to=bi[t.id];if(!to)return;
     t.pred.forEach((pid,i)=>{
       const fr=bi[pid];if(!fr)return;
-      const fx=t.pt[i]==='FS'?fr.x2:fr.x1;
+      const predTask=tasks.find(x=>x.id===pid);
+      const predName=predTask?predTask.t:'#'+pid;
+      const depType=t.pt[i];
+      const fx=depType==='FS'?fr.x2:fr.x1;
       const fy=fr.cy,tox=to.x1-1,toy=to.cy;
       const mx=fx+10;
       let pts;
       if(Math.abs(fy-toy)<3)pts=`${fx},${fy} ${tox},${toy}`;
       else pts=`${fx},${fy} ${mx},${fy} ${mx},${toy} ${tox},${toy}`;
-      bb+=`<g class="dep-group" data-from="${pid}" data-to="${t.id}" onclick="deleteDep(${pid},${t.id})">`;
+      bb+=`<g class="dep-group" data-from="${pid}" data-to="${t.id}" data-fname="${predName}" data-tname="${t.t}" data-dtype="${depType}" onclick="deleteDep(${pid},${t.id})" onmouseenter="showDepTip(event,this)" onmouseleave="hideDepTip()">`;
       bb+=`<polyline class="dep-hitarea" points="${pts}"/>`;
       bb+=`<polyline points="${pts}" stroke="#8294a8" stroke-width="1.2" fill="none" stroke-linejoin="round"/>`;
       bb+=`<polygon points="${tox+1},${toy} ${tox-5},${toy-3} ${tox-5},${toy+3}" fill="#8294a8"/>`;
@@ -1014,6 +1017,23 @@ function saveTask(){
 // ============================================================
 // DELETE DEPENDENCY (click on arrow)
 // ============================================================
+// DEPENDENCY TOOLTIP
+function showDepTip(e,el){
+  const tip=document.getElementById('ganttTip');
+  const from=el.dataset.fname;
+  const to=el.dataset.tname;
+  const dtype=el.dataset.dtype;
+  const typeLabel=dtype==='FS'?'Finish-to-Start':'Start-to-Start';
+  tip.innerHTML=`<b>${from}</b>→ <b>${to}</b><span style="font-size:10px;color:#94a3b8;margin-left:4px">(${typeLabel})</span><br><span style="font-size:10px;color:#94a3b8">Click to remove</span>`;
+  tip.style.display='block';
+  tip.style.left=(e.clientX+16)+'px';
+  tip.style.top=(e.clientY-60)+'px';
+}
+function hideDepTip(){
+  document.getElementById('ganttTip').style.display='none';
+}
+
+// DELETE DEPENDENCY
 function deleteDep(fromId, toId){
   const t=tasks.find(x=>x.id===toId);
   if(!t)return;

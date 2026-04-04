@@ -78,6 +78,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .tbar.dragging{opacity:.7;z-index:30!important;cursor:grabbing}
 .connect-line{position:absolute;pointer-events:none;z-index:25}
 .drop-target{box-shadow:0 0 0 3px var(--accent)!important;z-index:21!important}
+.gantt-tip{position:fixed;background:#1e293b;color:#fff;padding:10px 14px;border-radius:8px;font-size:12px;z-index:500;pointer-events:none;display:none;box-shadow:0 6px 20px rgba(0,0,0,.35);line-height:1.6;max-width:300px}
+.gantt-tip b{display:block;font-size:13px;margin-bottom:2px}
 .tbar.done{opacity:.4}
 .tbar.active-bar{box-shadow:0 2px 8px rgba(0,0,0,.25),inset 0 0 0 2px rgba(255,255,255,.3)}
 .tbar-label{position:absolute;font-size:10px;font-weight:500;color:#4a5568;white-space:nowrap;pointer-events:none;z-index:8}
@@ -210,6 +212,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
     <div class="gantt-header" id="ganttHeader"></div>
     <div class="gantt-body" id="ganttBody"></div>
   </div>
+  <!-- Tooltip -->
+  <div class="gantt-tip" id="ganttTip"></div>
   <!-- AI Chat Panel -->
   <div class="chat-panel" id="chatPanel">
     <div class="chat-header" onclick="toggleChat()">
@@ -685,7 +689,9 @@ function render(){
     bb+=`<div class="brow${idx%2?' alt':''}" style="top:${rowY}px;height:${ROW_H}px;width:${TW}px"></div>`;
     
     const innerLbl=bw>120?t.t:'';
-    bb+=`<div class="tbar" data-tid="${t.id}" style="left:${x1}px;top:${barY}px;width:${bw}px;height:${BAR_H}px;background:${col}">
+    const sStr=s.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
+    const eStr=e.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
+    bb+=`<div class="tbar" data-tid="${t.id}" data-tname="#${t.id} ${t.t}" data-tstart="${sStr}" data-tend="${eStr}" data-tdur="${t.d}" style="left:${x1}px;top:${barY}px;width:${bw}px;height:${BAR_H}px;background:${col}">
       <div class="resize-handle resize-left" data-tid="${t.id}" data-side="left"></div>
       <span class="bar-text">${innerLbl}</span>
       <div class="resize-handle resize-right" data-tid="${t.id}" data-side="right"></div>
@@ -1167,7 +1173,9 @@ function exportGanttHTML(){
     if(idx%2)body+=`<div style="position:absolute;top:${rowY}px;left:0;width:${TW}px;height:${xROW}px;background:rgba(241,245,249,.35);border-bottom:1px solid #f5f7fa"></div>`;
     else body+=`<div style="position:absolute;top:${rowY}px;left:0;width:${TW}px;height:${xROW}px;border-bottom:1px solid #f5f7fa"></div>`;
     const lbl=bw>120?t.t:'';
-    body+=`<div style="position:absolute;left:${x1}px;top:${barY}px;width:${bw}px;height:${xBAR}px;background:${col};border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;box-shadow:0 1.5px 4px rgba(0,0,0,.12)">${lbl}</div>`;
+    const sStr=s.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
+    const eStr=e.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
+    body+=`<div class="gbar" data-n="#${t.id} ${t.t}" data-s="${sStr}" data-e="${eStr}" data-d="${t.d}" style="position:absolute;left:${x1}px;top:${barY}px;width:${bw}px;height:${xBAR}px;background:${col};border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;box-shadow:0 1.5px 4px rgba(0,0,0,.12);cursor:pointer">${lbl}</div>`;
     if(bw<=120)body+=`<div style="position:absolute;left:${x1+bw+6}px;top:${barY+6}px;font-size:10px;font-weight:500;color:#4a5568;white-space:nowrap">${t.t}</div>`;
     bi[t.id]={cy:rowY+xROW/2,x1,x2:x1+bw};
   });
@@ -1217,7 +1225,11 @@ body{font-family:'Inter',sans-serif;background:#f5f6f8;color:#1a2332}
 .rp{flex:1;position:relative}
 .th{height:56px;position:relative;background:#e8ecf2;border-bottom:2px solid #b0bcc8;overflow:visible}
 .tb{position:relative}
+.gbar:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.2)!important;z-index:20}
+.tip{position:fixed;background:#1e293b;color:#fff;padding:10px 14px;border-radius:8px;font-size:12px;z-index:300;pointer-events:none;display:none;box-shadow:0 6px 20px rgba(0,0,0,.35);line-height:1.6}
+.tip b{display:block;font-size:13px;margin-bottom:2px}
 </style></head><body>
+<div class="tip" id="TIP"></div>
 <div class="hdr"><div><h1>Schedule - ${projName}</h1><div class="s">Drake Construction — 7422 Mountjoy Dr, Huntington Beach, CA 92648 — 714-841-5285</div></div><div class="r">Completion: ${endDate}</div></div>
 <div class="wrap"><div class="cnt">
 <div class="lp">${left}</div>
@@ -1225,7 +1237,16 @@ body{font-family:'Inter',sans-serif;background:#f5f6f8;color:#1a2332}
 <div class="th" style="width:${TW}px">${hdr}</div>
 <div class="tb" style="width:${TW}px;height:${BH}px">${body}</div>
 </div>
-</div></div></body></html>`;
+</div></div>
+<script>
+const tip=document.getElementById('TIP');
+document.querySelectorAll('.gbar').forEach(b=>{
+  b.onmouseenter=()=>{tip.innerHTML='<b>'+b.dataset.n+'</b>'+b.dataset.s+' → '+b.dataset.e+' ('+b.dataset.d+' days)';tip.style.display='block'};
+  b.onmousemove=(e)=>{tip.style.left=(e.clientX+16)+'px';tip.style.top=(e.clientY-50)+'px'};
+  b.onmouseleave=()=>{tip.style.display='none'};
+});
+<\/script>
+</body></html>`;
 
   const blob=new Blob([fullHTML],{type:'text/html'});
   const url=URL.createObjectURL(blob);
@@ -1319,7 +1340,27 @@ function setupDragListeners(){
   const gb=document.getElementById('ganttBody');
   if(!gb)return;
   
+  // TOOLTIP
+  const tip=document.getElementById('ganttTip');
+  gb.addEventListener('mouseover',function(e){
+    const bar=e.target.closest('.tbar');
+    if(!bar||!bar.dataset.tname)return;
+    tip.innerHTML=`<b>${bar.dataset.tname}</b>${bar.dataset.tstart} → ${bar.dataset.tend} (${bar.dataset.tdur} days)`;
+    tip.style.display='block';
+  });
+  gb.addEventListener('mousemove',function(e){
+    if(tip.style.display==='block'){
+      tip.style.left=(e.clientX+16)+'px';
+      tip.style.top=(e.clientY-50)+'px';
+    }
+  });
+  gb.addEventListener('mouseout',function(e){
+    const bar=e.target.closest('.tbar');
+    if(bar||e.target===gb)tip.style.display='none';
+  });
+  
   gb.addEventListener('mousedown',function(e){
+    tip.style.display='none'; // hide tooltip when dragging
     const bar=e.target.closest('.tbar');
     if(!bar)return;
     const tid=parseInt(bar.dataset.tid);

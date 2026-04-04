@@ -1,8 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const Database = require('better-sqlite3');
-const fs = require('fs');
+const { createClient } = require('@libsql/client');
 require('dotenv').config();
 
 const app = express();
@@ -12,64 +11,78 @@ app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// DATABASE
-const dbPath = process.env.DB_PATH || path.join(__dirname, 'data', 'projects.db');
-fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-const db = new Database(dbPath);
-db.pragma('journal_mode = WAL');
-db.exec(`CREATE TABLE IF NOT EXISTS projects (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  floors TEXT DEFAULT '2',
-  start_date TEXT DEFAULT '2026-01-01',
-  tasks TEXT NOT NULL,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
-)`);
+// DATABASE — Turso (cloud SQLite)
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL || 'file:local.db',
+  authToken: process.env.TURSO_AUTH_TOKEN || undefined
+});
+
+// Init table
+(async () => {
+  await db.execute(`CREATE TABLE IF NOT EXISTS projects (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    floors TEXT DEFAULT '2',
+    start_date TEXT DEFAULT '2026-01-01',
+    tasks TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  )`);
+  console.log('Database ready');
+})();
 
 // LIST PROJECTS
-app.get('/api/projects', (req, res) => {
+app.get('/api/projects', async (req, res) => {
   try {
-    const projects = db.prepare("SELECT id, name, floors, start_date, created_at, updated_at, json_array_length(tasks) as task_count FROM projects ORDER BY updated_at DESC").all();
+    const result = await db.execute("SELECT id, name, floors, start_date, created_at, updated_at FROM projects ORDER BY updated_at DESC");
+    const projects = result.rows.map(r => ({
+      id: r.id, name: r.name, floors: r.floors, start_date: r.start_date,
+      created_at: r.created_at, updated_at: r.updated_at,
+      task_count: JSON.parse(r.tasks || '[]').length
+    }));
     res.json(projects);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // GET PROJECT
-app.get('/api/projects/:id', (req, res) => {
+app.get('/api/projects/:id', async (req, res) => {
   try {
-    const p = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
-    if (!p) return res.status(404).json({ error: 'Not found' });
-    p.tasks = JSON.parse(p.tasks);
-    res.json(p);
+    const result = await db.execute({ sql: 'SELECT * FROM projects WHERE id = ?', args: [req.params.id] });
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    const p = result.rows[0];
+    res.json({ ...p, tasks: JSON.parse(p.tasks) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // CREATE PROJECT
-app.post('/api/projects', (req, res) => {
+app.post('/api/projects', async (req, res) => {
   try {
     const { name, floors, start_date, tasks } = req.body;
     const id = 'proj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    db.prepare("INSERT INTO projects (id, name, floors, start_date, tasks) VALUES (?, ?, ?, ?, ?)").run(id, name, floors || '2', start_date || '2026-01-01', JSON.stringify(tasks || []));
+    await db.execute({
+      sql: "INSERT INTO projects (id, name, floors, start_date, tasks) VALUES (?, ?, ?, ?, ?)",
+      args: [id, name, floors || '2', start_date || '2026-01-01', JSON.stringify(tasks || [])]
+    });
     res.json({ id, name });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // SAVE PROJECT
-app.put('/api/projects/:id', (req, res) => {
+app.put('/api/projects/:id', async (req, res) => {
   try {
     const { name, floors, start_date, tasks } = req.body;
-    const existing = db.prepare('SELECT id FROM projects WHERE id = ?').get(req.params.id);
-    if (!existing) return res.status(404).json({ error: 'Not found' });
-    db.prepare("UPDATE projects SET name=?, floors=?, start_date=?, tasks=?, updated_at=datetime('now') WHERE id=?").run(name, floors, start_date, JSON.stringify(tasks), req.params.id);
+    await db.execute({
+      sql: "UPDATE projects SET name=?, floors=?, start_date=?, tasks=?, updated_at=datetime('now') WHERE id=?",
+      args: [name, floors, start_date, JSON.stringify(tasks), req.params.id]
+    });
     res.json({ message: 'Saved' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // DELETE PROJECT
-app.delete('/api/projects/:id', (req, res) => {
+app.delete('/api/projects/:id', async (req, res) => {
   try {
-    db.prepare('DELETE FROM projects WHERE id = ?').run(req.params.id);
+    await db.execute({ sql: 'DELETE FROM projects WHERE id = ?', args: [req.params.id] });
     res.json({ message: 'Deleted' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

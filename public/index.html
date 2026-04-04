@@ -42,6 +42,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .btn{padding:7px 16px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-primary:hover{background:#1d4ed8}
+.tbtn{padding:4px 10px;border:1px solid var(--border);border-radius:5px;background:#f8fafc;cursor:pointer;font-size:13px;font-weight:600;color:var(--text);transition:all .1s}
+.tbtn:hover{background:#e2e8f0}
 .btn-green{background:var(--accent2);color:#fff}
 .btn-green:hover{background:#047857}
 .btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.3)}
@@ -248,25 +250,49 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
     <div class="stat"><div class="num" id="statEnd">—</div><div class="lbl">Completion</div></div>
   </div>
 </div>
-<div style="background:#fff;border-bottom:1px solid var(--border);padding:8px 24px;display:flex;flex-wrap:wrap;gap:12px;align-items:center">
-  <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-right:4px">Phases:</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#4A6FA5;display:inline-block"></span>Pre-Con</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#48C9B0;display:inline-block"></span>Site Work</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#5DADE2;display:inline-block"></span>Foundation</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#82B541;display:inline-block"></span>Framing</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#8B5E3C;display:inline-block"></span>Roofing</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#E74C3C;display:inline-block"></span>MEP</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#A8BF30;display:inline-block"></span>Inspections</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#2C3E50;display:inline-block"></span>Exterior</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#7F8C8D;display:inline-block"></span>Insul/Drywall</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#34495E;display:inline-block"></span>Win/Doors</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#8E44AD;display:inline-block"></span>Interior Fin.</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#556B2F;display:inline-block"></span>Paint</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#27AE60;display:inline-block"></span>Ext. Finishes</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#C0392B;display:inline-block"></span>Flooring/Final</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#2D572C;display:inline-block"></span>Hardscape</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#4A4A4A;display:inline-block"></span>Hardware</span>
-  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#922B21;display:inline-block"></span>Closeout</span>
+<div style="background:#fff;border-bottom:1px solid var(--border);padding:8px 24px;display:flex;flex-wrap:wrap;gap:14px;align-items:center">
+  <!-- ZOOM -->
+  <div style="display:flex;align-items:center;gap:4px">
+    <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Zoom:</span>
+    <button class="tbtn" onclick="zoomOut()" title="Zoom Out">−</button>
+    <span id="zoomLevel" style="font-size:10px;color:var(--muted);min-width:32px;text-align:center">100%</span>
+    <button class="tbtn" onclick="zoomIn()" title="Zoom In">+</button>
+  </div>
+  <span style="width:1px;height:16px;background:var(--border)"></span>
+  <!-- GO TO DATE -->
+  <div style="display:flex;align-items:center;gap:4px">
+    <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Go to:</span>
+    <input type="date" id="gotoDate" style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit">
+    <button class="tbtn" onclick="goToDate()">→</button>
+  </div>
+  <span style="width:1px;height:16px;background:var(--border)"></span>
+  <!-- FILTER -->
+  <div style="display:flex;align-items:center;gap:4px">
+    <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Filter:</span>
+    <select id="phaseFilter" onchange="applyFilter()" style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;min-width:130px">
+      <option value="">All Phases</option>
+    </select>
+    <button class="tbtn" onclick="document.getElementById('phaseFilter').value='';applyFilter()">✕</button>
+  </div>
+  <span style="width:1px;height:16px;background:var(--border)"></span>
+  <!-- PHASE LEGEND (compact) -->
+  <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Phases:</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#4A6FA5;display:inline-block"></span>Pre-Con</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#48C9B0;display:inline-block"></span>Site</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#5DADE2;display:inline-block"></span>Found.</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#82B541;display:inline-block"></span>Frame</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#8B5E3C;display:inline-block"></span>Roof</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#E74C3C;display:inline-block"></span>MEP</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#A8BF30;display:inline-block"></span>Insp.</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#2C3E50;display:inline-block"></span>Ext.</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#7F8C8D;display:inline-block"></span>Drywall</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#8E44AD;display:inline-block"></span>Int.Fin</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#556B2F;display:inline-block"></span>Paint</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#C0392B;display:inline-block"></span>Floor</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#2D572C;display:inline-block"></span>Hard.</span>
+    <span style="display:flex;align-items:center;gap:2px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#922B21;display:inline-block"></span>Close</span>
+  </div>
 </div>
 
 <div class="main">
@@ -672,7 +698,9 @@ function recalcAll(){
 // ============================================================
 // RENDER
 // ============================================================
-const PPD=20,ROW_H=36,BAR_H=24,BAR_TOP=(ROW_H-BAR_H)/2;
+let PPD=20;
+const ROW_H=36,BAR_H=24,BAR_TOP=(ROW_H-BAR_H)/2;
+let activeFilter='';
 const TODAY=new Date(2026,3,3);
 
 function render(){
@@ -696,12 +724,14 @@ function render(){
   const TW=Math.ceil((dMax-dMin)/864e5)*PPD;
   function dX(d){return Math.round((d-dMin)/864e5*PPD)}
 
-  // Task list
+  // Task list with filter support
   const tlb=document.getElementById('taskListBody');
   let lh='';
   sorted.forEach(t=>{
     const{s,e}=computed[t.id];
-    lh+=`<div class="task-row" onclick="openEdit(${t.id})">
+    const filtered=activeFilter&&t.ph!==activeFilter;
+    const dimStyle=filtered?'opacity:.3;':'';
+    lh+=`<div class="task-row" onclick="openEdit(${t.id})" style="${dimStyle}">
       <span class="tid">${t.id}</span>
       <span class="tname"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${PCOL[t.ph]||'#888'};margin-right:5px;flex-shrink:0;vertical-align:middle"></span>${t.t}</span>
       <span class="tstart">${fmtShort(s)}</span>
@@ -753,19 +783,21 @@ function render(){
     const rowY=idx*ROW_H;
     const barY=rowY+BAR_TOP;
     const col=PCOL[t.ph]||'#888';
+    const filtered=activeFilter&&t.ph!==activeFilter;
+    const dimBar=filtered?'opacity:.15;':'';
     
     bb+=`<div class="brow${idx%2?' alt':''}" style="top:${rowY}px;height:${ROW_H}px;width:${TW}px"></div>`;
     
     const innerLbl=bw>120?t.t:'';
     const sStr=s.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
     const eStr=e.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
-    bb+=`<div class="tbar" data-tid="${t.id}" data-tname="#${t.id} ${t.t}" data-tstart="${sStr}" data-tend="${eStr}" data-tdur="${t.d}" style="left:${x1}px;top:${barY}px;width:${bw}px;height:${BAR_H}px;background:${col}">
+    bb+=`<div class="tbar" data-tid="${t.id}" data-tname="#${t.id} ${t.t}" data-tstart="${sStr}" data-tend="${eStr}" data-tdur="${t.d}" style="left:${x1}px;top:${barY}px;width:${bw}px;height:${BAR_H}px;background:${col};${dimBar}">
       <div class="resize-handle resize-left" data-tid="${t.id}" data-side="left"></div>
       <span class="bar-text">${innerLbl}</span>
       <div class="resize-handle resize-right" data-tid="${t.id}" data-side="right"></div>
       <div class="connect-point" data-tid="${t.id}" title="Drag to connect"></div>
     </div>`;
-    if(bw<=120)bb+=`<div class="tbar-label" style="left:${x1+bw+5}px;top:${barY+5}px">${t.t}</div>`;
+    if(bw<=120)bb+=`<div class="tbar-label" style="left:${x1+bw+5}px;top:${barY+5}px;${dimBar}">${t.t}</div>`;
     
     bi[t.id]={cy:rowY+ROW_H/2,x1,x2:x1+bw,rowY,barY};
   });
@@ -796,6 +828,21 @@ function render(){
   
   // Auto-save to localStorage
   autoSave();
+  
+  // Store for zoom/goto
+  window._renderDMin=dMin;
+  window._renderDMax=dMax;
+  
+  // Populate filter dropdown (only once or when tasks change)
+  const filterEl=document.getElementById('phaseFilter');
+  if(filterEl){
+    const usedPhases=[...new Set(tasks.map(t=>t.ph))];
+    const currentVal=filterEl.value;
+    filterEl.innerHTML='<option value="">All Phases</option>'+
+      PHASE_LIST.filter(p=>usedPhases.includes(p.code)).map(p=>
+        `<option value="${p.code}"${p.code===currentVal?' selected':''}>${p.name}</option>`
+      ).join('');
+  }
 }
 
 // ============================================================
@@ -1056,6 +1103,51 @@ function changeFloors(){initTasks()}
 function changeStart(){
   tasks.forEach(t=>{t.fs=null;t.fe=null});
   calcAll();render();
+}
+
+// ============================================================
+// ZOOM
+// ============================================================
+const ZOOM_LEVELS=[8,12,16,20,26,32,40];
+let zoomIdx=3; // default PPD=20
+
+function zoomIn(){
+  if(zoomIdx<ZOOM_LEVELS.length-1){
+    zoomIdx++;
+    PPD=ZOOM_LEVELS[zoomIdx];
+    document.getElementById('zoomLevel').textContent=Math.round(PPD/20*100)+'%';
+    calcAll();render();
+  }
+}
+
+function zoomOut(){
+  if(zoomIdx>0){
+    zoomIdx--;
+    PPD=ZOOM_LEVELS[zoomIdx];
+    document.getElementById('zoomLevel').textContent=Math.round(PPD/20*100)+'%';
+    calcAll();render();
+  }
+}
+
+// ============================================================
+// GO TO DATE
+// ============================================================
+function goToDate(){
+  const val=document.getElementById('gotoDate').value;
+  if(!val)return;
+  const target=new Date(val+'T12:00:00');
+  if(!window._renderDMin)return;
+  const x=Math.round((target-window._renderDMin)/864e5*PPD);
+  const ganttArea=document.getElementById('ganttArea');
+  ganttArea.scrollLeft=Math.max(0,x-200);
+}
+
+// ============================================================
+// FILTER BY PHASE
+// ============================================================
+function applyFilter(){
+  activeFilter=document.getElementById('phaseFilter').value;
+  render();
 }
 
 // ============================================================

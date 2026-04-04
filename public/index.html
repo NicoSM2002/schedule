@@ -200,18 +200,39 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
           <label>Project Name</label>
           <input type="text" id="homeNewName" placeholder="e.g. 415 North Star" value="">
         </div>
-        <div class="home-field-row">
-          <div class="home-field">
-            <label>Floors</label>
-            <select id="homeNewFloors">
-              <option value="1">1 Floor</option>
-              <option value="2" selected>2 Floors</option>
-              <option value="3">3 Floors</option>
-            </select>
+        <div class="home-field">
+          <label>Start From</label>
+          <div style="display:flex;gap:8px;margin-bottom:4px">
+            <label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;transition:all .1s" id="optTemplate" onclick="setProjectType('template')">
+              <input type="radio" name="projType" value="template" checked style="accent-color:var(--accent)"> 
+              <span><b>Template</b><br><span style="font-size:10px;color:var(--muted)">Based on Walnut St. reference</span></span>
+            </label>
+            <label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;transition:all .1s" id="optBlank" onclick="setProjectType('blank')">
+              <input type="radio" name="projType" value="blank" style="accent-color:var(--accent)">
+              <span><b>Blank</b><br><span style="font-size:10px;color:var(--muted)">Start from scratch</span></span>
+            </label>
           </div>
+        </div>
+        <div id="templateOptions">
+          <div class="home-field-row">
+            <div class="home-field">
+              <label>Floors</label>
+              <select id="homeNewFloors">
+                <option value="1">1 Floor</option>
+                <option value="2" selected>2 Floors</option>
+                <option value="3">3 Floors</option>
+              </select>
+            </div>
+            <div class="home-field">
+              <label>Start Date</label>
+              <input type="date" id="homeNewStart" value="2026-01-01">
+            </div>
+          </div>
+        </div>
+        <div id="blankOptions" style="display:none">
           <div class="home-field">
             <label>Start Date</label>
-            <input type="date" id="homeNewStart" value="2026-01-01">
+            <input type="date" id="homeBlankStart" value="2026-01-01">
           </div>
         </div>
         <button class="btn btn-primary home-btn" onclick="createNewProject()">Create Project →</button>
@@ -2321,22 +2342,43 @@ async function openProject(id){
   }catch(err){alert('Error: '+err.message)}
 }
 
+let projectType='template';
+
+function setProjectType(type){
+  projectType=type;
+  document.getElementById('templateOptions').style.display=type==='template'?'block':'none';
+  document.getElementById('blankOptions').style.display=type==='blank'?'block':'none';
+  document.getElementById('optTemplate').style.borderColor=type==='template'?'var(--accent)':'var(--border)';
+  document.getElementById('optTemplate').style.background=type==='template'?'#eff6ff':'';
+  document.getElementById('optBlank').style.borderColor=type==='blank'?'var(--accent)':'var(--border)';
+  document.getElementById('optBlank').style.background=type==='blank'?'#eff6ff':'';
+}
+
 async function createNewProject(){
   const name=document.getElementById('homeNewName').value.trim();
   if(!name){alert('Enter a project name');return}
-  const floors=document.getElementById('homeNewFloors').value;
-  const startDate=document.getElementById('homeNewStart').value;
   
   // Show planner
   document.getElementById('homeScreen').style.display='none';
   document.getElementById('plannerScreen').style.display='flex';
-  
-  // Setup planner
   document.getElementById('projName').value=name;
-  document.getElementById('floors').value=floors;
-  document.getElementById('startDate').value=startDate;
   currentProjectId=null;
-  initTasks();
+  
+  if(projectType==='template'){
+    const floors=document.getElementById('homeNewFloors').value;
+    const startDate=document.getElementById('homeNewStart').value;
+    document.getElementById('floors').value=floors;
+    document.getElementById('startDate').value=startDate;
+    initTasks();
+  } else {
+    // Blank project — no tasks
+    const startDate=document.getElementById('homeBlankStart').value;
+    document.getElementById('floors').value='1';
+    document.getElementById('startDate').value=startDate;
+    tasks=[];
+    computed={};
+    render();
+  }
   
   // Save to server immediately
   const data=getProjectData();

@@ -259,13 +259,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
     <button class="tbtn" onclick="zoomIn()" title="Zoom In">+</button>
   </div>
   <span style="width:1px;height:16px;background:var(--border)"></span>
-  <!-- GO TO DATE -->
-  <div style="display:flex;align-items:center;gap:4px">
-    <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Go to:</span>
-    <input type="date" id="gotoDate" style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit">
-    <button class="tbtn" onclick="goToDate()">→</button>
-  </div>
-  <span style="width:1px;height:16px;background:var(--border)"></span>
   <!-- FILTER -->
   <div style="display:flex;align-items:center;gap:4px">
     <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Filter:</span>
@@ -463,13 +456,13 @@ const a3=add("Permits",20,[a2],["SS"],"PC");
 const a4=add("Site Work",floors===1?3:floors===2?65:65,[a3],["FS"],"SW");
 const a5=add("Underground Rough Plumbing",5,[a4],["FS"],"FD");
 const a6=add("Rebar Layout",3,[a5],["FS"],"FD");
-const a7=add("Rebar/Footing Inspection",1,[a6],["FS"],"FD");
+const a7=add("Rebar/Footing Inspection",1,[a6],["FS"],"IN");
 const a8=add("Footings",floors===1?19:11,[a7],["FS"],"FD");
 const a9=add("Footings Concrete Pour",1,[a8],["FS"],"FD");
-const a10=add("Footings Inspection",1,[a9],["FS"],"FD");
-const a11=add("Foundation Structural Observation",1,[a10],["FS"],"FD");
+const a10=add("Footings Inspection",1,[a9],["FS"],"IN");
+const a11=add("Foundation Structural Observation",1,[a10],["FS"],"IN");
 const a12=add("Steel Beams Delivery",1,[a11],["FS"],"FD");
-const a13=add("Slab Rebar Inspection",1,[a12],["FS"],"FD");
+const a13=add("Slab Rebar Inspection",1,[a12],["FS"],"IN");
 const a14=add("Slab Concrete Pour",1,[a13],["FS"],"FD");
 const a15=add("Foundation",floors===1?4:33,[a14],["FS"],"FD");
 
@@ -483,31 +476,31 @@ for(let f=1;f<=floors;f++){
   const fr=add(label,dur,[prev],["FS"],"FR");
   framingIds.push(fr);
   if(f===1&&floors>1){
-    add("Elevator Walk-Through",1,[fr],["SS"],"FR");
+    add("Elevator Walk-Through",1,[fr],["SS"],"IN");
   }
   add("Scaffolding Set Up",4,[fr],["SS"],"FR");
   const trash=add("Trash Pick Up",1,[fr],["FS"],"FR");
-  const so=add(`${floors===1?'':f===1?'1st Fl. ':f===2?'2nd Fl. ':'3rd Fl. '}Sheathing Structural Obs.`,1,[trash],["FS"],"FR");
-  const si=add(`${floors===1?'':f===1?'1st Fl. ':f===2?'2nd Fl. ':'3rd Fl. '}Sheathing City Inspection`,1,[so],["FS"],"FR");
+  const so=add(`${floors===1?'':f===1?'1st Fl. ':f===2?'2nd Fl. ':'3rd Fl. '}Sheathing Structural Obs.`,1,[trash],["FS"],"IN");
+  const si=add(`${floors===1?'':f===1?'1st Fl. ':f===2?'2nd Fl. ':'3rd Fl. '}Sheathing City Inspection`,1,[so],["FS"],"IN");
   lastSheathing=si;
   if(f<floors){
-    add(`${f===1?'1st Fl. ':'2nd Fl. '}Sheathing City Insp. #2`,1,[si],["FS"],"FR");
+    add(`${f===1?'1st Fl. ':'2nd Fl. '}Sheathing City Insp. #2`,1,[si],["FS"],"IN");
     lastSheathing=id;
   }
 }
 
 const lastFrame=framingIds[framingIds.length-1];
-add("Walk-Through Meeting #1",1,[lastFrame],["FS"],"FR");
+add("Walk-Through Meeting #1",1,[lastFrame],["FS"],"IN");
 
 // Roofing
 const ash=add("Apply Sheathing",4,[lastFrame],["SS"],"RF");
 const rmd=add("Roofing Materials Delivery",1,[ash],["FS"],"RF");
 const ir=add("Install Roof",13,[rmd],["FS"],"RF");
-const wtr=add("Walk-Through With Roofer",1,[ir],["FS"],"RF");
-const rdi=add("Roof Dry-In Inspection",1,[ir],["FS"],"RF");
-const rci=add("Roof City Inspection",6,[rdi],["FS"],"RF");
-add("Prep And Paint Fascia",10,[rci],["FS"],"RF");
-add("Building Height Certificate",1,[lastSheathing],["FS"],"RF");
+const wtr=add("Walk-Through With Roofer",1,[ir],["FS"],"IN");
+const rdi=add("Roof Dry-In Inspection",1,[ir],["FS"],"IN");
+const rci=add("Roof City Inspection",6,[rdi],["FS"],"IN");
+add("Prep And Paint Fascia",10,[rci],["FS"],"PT");
+add("Building Height Certificate",1,[lastSheathing],["FS"],"IN");
 
 // MEP
 const hm=add("HVAC Meeting",1,[lastFrame],["SS"],"MP");
@@ -530,24 +523,24 @@ add("Walk-Through Meeting #2",1,[ci],["FS"],"IN");
 
 // Exterior
 const em=add("Exterior Masonry",25,[ash],["SS"],"EX");
-const hw=add("House Wrap",4,[rpi],["FS"],"EX");
-const ed=add("Exterior Doors",floors===1?5:7,[hw],["FS"],"EX");
-const iw=add("Install Windows",floors===1?5:15,[hw],["FS"],"EX");
-add("Deck Drains Walk-Through",1,[lastSheathing],["FS"],"EX");
+const hw=add("House Wrap",4,[rpi],["FS"],"EF");
+const ed=add("Exterior Doors",floors===1?5:7,[hw],["FS"],"WD");
+const iw=add("Install Windows",floors===1?5:15,[hw],["FS"],"WD");
+add("Deck Drains Walk-Through",1,[lastSheathing],["FS"],"IN");
 add("Deck Drains & Waterproof",6,[id],["FS"],"EX");
 add("Hot Mop",1,[hri],["FS"],"EX");
 const ppf=T.find(x=>x.t==="Prep And Paint Fascia");
 add("Walk-in Showers Framing",12,[ppf?ppf.id:rci],["SS"],"EX");
 add("Interior Soffits",4,[id-1],["FS"],"EX");
-add("Stucco",21,[hw],["FS"],"EX");
+add("Stucco",21,[hw],["FS"],"EF");
 const sid=add("Install Siding",12,[hw],["FS"],"EF");
 
 // Insulation/Drywall
 const ins=add("Insulation Install",floors===1?2:3,[ci],["FS"],"ID");
-const insi=add("Insulation Inspection",1,[ins],["FS"],"ID");
+const insi=add("Insulation Inspection",1,[ins],["FS"],"IN");
 const il=add("Interior Lath",1,[insi],["FS"],"ID");
 const dw=add("Drywall",floors===1?8:15,[il],["FS"],"ID");
-const dwi=add("Drywall Inspection",1,[dw],["FS"],"ID");
+const dwi=add("Drywall Inspection",1,[dw],["FS"],"IN");
 add("Float Showers",2,[dwi],["FS"],"ID");
 const dwm=add("Drywall Mud",14,[dwi],["FS"],"ID");
 
@@ -563,15 +556,15 @@ add("Windows Casing Installation",4,[idi],["SS"],"WD");
 const wci=id;
 
 // Interior Finishes
-const pw=add("Prime Walls",5,[dwm],["FS"],"IF");
+const pw=add("Prime Walls",5,[dwm],["FS"],"PT");
 const bti=add("Bathrooms Tile Installation",20,[pw],["FS"],"IF");
 const cab=add("Cabinet Install",10,[pw],["FS"],"IF");
 const imw=add("Interior Millwork",floors===1?10:15,[pw],["FS"],"IF");
 const pi=add("Painting-Interior",12,[imw],["FS"],"PT");
-const pcab=add("Paint Cabinets",14,[cab],["FS"],"IF");
-add("Drywall Repairs",3,[pcab],["FS"],"IF");
+const pcab=add("Paint Cabinets",14,[cab],["FS"],"PT");
+add("Drywall Repairs",3,[pcab],["FS"],"ID");
 const dwr=id;
-add("Wallpaper Installation",12,[pi],["FS"],"IF");
+add("Wallpaper Installation",12,[pi],["FS"],"PT");
 add("Prep and Prime Casing",4,[wci],["FS"],"IF");
 add("Cabinet Hardware Installation",3,[pcab],["FS"],"IF");
 add("Bath Stone Installation",1,[bti],["FS"],"KB");
@@ -589,7 +582,7 @@ if(floors>1){
   add("Stair Railing Installation",5,[str],["FS"],"FL");
   add("Stairs Balusters Installation",1,[id],["FS"],"FL");
 }
-add("Baseboards Installation",8,[fl],["FS"],"IF");
+add("Baseboards Installation",8,[fl],["FS"],"HT");
 
 // Kitchen/Bath
 const ct=add("Countertop Install",5,[cab],["FS"],"KB");
@@ -603,15 +596,15 @@ add("Landscaping/Finish Grade",11,[fw],["FS"],"HS");
 
 // MEP Finish
 const gm=add("Gas Meter Installation",11,[pe],["FS"],"MF");
-add("Gas Service Line Inspection",1,[gm],["FS"],"MF");
+add("Gas Service Line Inspection",1,[gm],["FS"],"IN");
 const hf=add("HVAC Finish",4,[fl],["FS"],"MF");
 const lf=add("Light Fixture Install",4,[fl],["FS"],"MF");
 const pf=add("Plumbing Fixtures Install",4,[fl],["FS"],"MF");
 add("HVAC Registers Installation",1,[pcab],["FS"],"MF");
 const he=add("HVAC Equipment Installation",2,[hf],["FS"],"MF");
 const ep=add("Edison Panel",1,[gm],["FS"],"MF");
-const efi=add("Electrical Final Inspection",1,[ep],["FS"],"MF");
-add("Fire Sprinkler Final Inspection",1,[he],["FS"],"MF");
+const efi=add("Electrical Final Inspection",1,[ep],["FS"],"IN");
+add("Fire Sprinkler Final Inspection",1,[he],["FS"],"IN");
 add("Solar Panel Equipment Installation",1,[efi],["FS"],"MF");
 
 // Hardware/Trim
@@ -624,11 +617,11 @@ add("Remove Temp Fence",1,[efi],["FS"],"XF");
 
 // Closeout
 const ap=add("Appliance Installation",3,[ft],["FS"],"AP");
-add("Walk-Through Meeting #3",1,[ap],["FS"],"CL");
+add("Walk-Through Meeting #3",1,[ap],["FS"],"IN");
 const pl=add("Punch List",14,[id],["FS"],"CL");
 const dc=add("Interior Deep Cleaning",3,[pl],["FS"],"CL");
 add("Final touch up, punchout, clean.",15,[dc],["FS"],"CL");
-add("Final City Inspection",1,[id],["FS"],"CL");
+add("Final City Inspection",1,[id],["FS"],"IN");
 add("Completion/Final Walkthrough",1,[id],["FS"],"CL");
 
 return T;

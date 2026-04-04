@@ -182,76 +182,87 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .export-area{width:100%;height:200px;font-family:'Courier New',monospace;font-size:10px;border:1px solid var(--border);border-radius:6px;padding:8px;resize:none}
 
 /* ============================================================
-   MOBILE RESPONSIVE
+   MOBILE RESPONSIVE (max-width: 768px)
+   Desktop version is NOT affected by any of these rules.
    ============================================================ */
 @media(max-width:768px){
-  /* ALLOW PAGE SCROLL ON MOBILE */
+  /* ALLOW PAGE SCROLL */
   body{overflow:auto;height:auto}
-  #plannerScreen{height:auto !important;overflow:visible !important}
+  #plannerScreen{height:auto !important;overflow:visible !important;flex-direction:column !important}
   
   /* HOME SCREEN */
   .home-content{grid-template-columns:1fr;padding:16px 16px 40px}
-  .home-header{padding:24px 16px 12px}
-  .home-logo h1{font-size:22px}
-  .home-section{padding:18px}
+  .home-header{padding:20px 16px 10px}
+  .home-logo h1{font-size:20px}
+  .home-logo p{font-size:12px}
+  .home-section{padding:16px}
   .home-field-row{flex-direction:column;gap:10px}
   
-  /* TOPBAR - compact single row */
-  .topbar{padding:6px 10px;flex-wrap:wrap;height:auto;gap:4px}
-  .topbar>div:first-child{width:100%;margin-bottom:2px}
-  .topbar h1{font-size:12px}
+  /* ---- TOPBAR ---- */
+  .topbar{padding:10px 14px;flex-direction:column;height:auto;gap:6px;align-items:stretch}
+  .topbar>div:first-child{text-align:center}
+  .topbar h1{font-size:14px}
   .topbar .sub{display:none}
-  .topbar .actions{flex-wrap:wrap;gap:3px;width:100%;justify-content:center}
-  .topbar .actions .btn{padding:5px 8px;font-size:9px}
+  .topbar .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;width:100%}
+  .topbar .actions .btn{padding:8px 4px;font-size:10px;text-align:center;border-radius:8px}
   .topbar .actions span[style*="width:1px"]{display:none}
   
-  /* CONFIG - horizontal compact */
-  .config{padding:8px 12px;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
-  .config .config-group{flex:1;min-width:120px}
-  .config-group label{font-size:8px}
-  .config-group input,.config-group select{padding:5px 8px;font-size:11px}
-  .stats{margin-left:auto;gap:10px}
-  .stat .num{font-size:16px}
-  .stat .lbl{font-size:7px}
+  /* ---- CONFIG BAR ---- */
+  .config{padding:10px 14px;flex-direction:column;gap:6px;align-items:stretch}
+  .config .config-group{width:100%}
+  .config-group label{font-size:9px;margin-bottom:2px}
+  .config-group input,.config-group select{padding:8px 12px;font-size:13px;width:100%}
+  .stats{margin:0;display:flex;justify-content:space-around;padding:6px 0;border-top:1px solid var(--border)}
+  .stat .num{font-size:20px}
+  .stat .lbl{font-size:8px}
   
-  /* TOOLBAR - zoom/filter/phases compact */
-  .config+div{padding:6px 10px !important;gap:6px !important;flex-wrap:wrap !important}
-  .config+div .tbtn{padding:2px 6px;font-size:10px}
-  .config+div select{font-size:10px;min-width:100px !important;padding:3px 6px !important}
-  /* Hide phase legend on mobile - save space */
+  /* ---- TOOLBAR (zoom/filter) ---- */
+  .config+div{padding:8px 14px !important;gap:8px !important;flex-wrap:wrap !important;justify-content:center !important}
+  .config+div .tbtn{padding:4px 10px;font-size:12px}
+  .config+div select{font-size:11px;min-width:120px !important;padding:5px 8px !important}
+  /* Hide phase legend dots on mobile */
   .config+div>div:last-child{display:none}
   
-  /* GANTT VIEW - scrollable horizontally */
-  .main{display:flex !important;height:auto !important;min-height:50vh;overflow:visible}
-  .task-list{display:none !important}
-  .gantt-area{overflow:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:400px}
+  /* ---- DEFAULT TO LIST VIEW (JS will override when user clicks Gantt) ---- */
+  .main{display:none}
+  #listView{display:block}
   
-  /* LIST VIEW */
-  .list-view{height:auto !important}
-  .list-table-wrap{padding:8px 10px}
-  .list-table{font-size:11px}
-  .list-table thead th{padding:8px 5px;font-size:8px;letter-spacing:0}
-  .list-table td{padding:10px 5px}
+  /* ---- LIST VIEW ---- */
+  .list-view{height:auto !important;overflow:visible}
+  .list-table-wrap{padding:4px 8px}
+  .list-table{font-size:12px}
+  .list-table thead th{padding:10px 6px;font-size:9px;letter-spacing:0}
+  .list-table td{padding:12px 6px}
+  .list-table .lt-id{font-size:11px;width:30px}
+  .list-table .lt-dot span{width:10px !important;height:10px !important}
+  .list-table .lt-title{font-size:12px;font-weight:600}
+  .list-table .lt-date{font-size:10px}
+  /* Hide less important columns */
   .list-table .lt-complete,.list-table .lt-phase,.list-table .lt-dur{display:none}
   .list-table th:nth-child(4),.list-table th:nth-child(5),.list-table th:nth-child(6){display:none}
-  .list-table .lt-title{font-size:11px}
-  .list-table .lt-date{font-size:10px}
   
-  /* MODALS */
-  .modal{width:95vw;padding:16px;max-height:85vh}
+  /* ---- GANTT VIEW (when toggled via JS) ---- */
+  .main .task-list{display:none}
+  .main .gantt-area{overflow:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:400px}
+  
+  /* ---- MODALS ---- */
+  .modal{width:94vw;padding:16px;max-height:88vh}
   .modal h2{font-size:14px}
   .modal .field-row{flex-direction:column;gap:8px}
+  .modal .field input,.modal .field select{font-size:13px;padding:8px 12px}
   
-  /* CHAT FLOAT */
-  .chat-fab{width:48px;height:48px;font-size:22px;bottom:16px;right:16px}
-  .chat-float{width:calc(100vw - 32px);right:16px;bottom:76px;height:55vh}
+  /* ---- CHAT FLOAT ---- */
+  .chat-fab{width:50px;height:50px;font-size:24px;bottom:16px;right:16px}
+  .chat-float{width:calc(100vw - 24px);right:12px;bottom:78px;height:55vh;border-radius:12px}
+  .chat-float-header{padding:10px 14px;font-size:13px}
+  .chat-input-area input{font-size:14px;padding:10px 12px}
+  .chat-send{padding:10px 14px;font-size:12px}
+  .chat-mic{padding:10px;font-size:18px}
 }
 
-@media(max-width:480px){
-  .topbar .actions .btn{padding:4px 6px;font-size:8px}
-  .home-logo h1{font-size:18px}
-  .stat .num{font-size:14px}
-  .config .config-group{min-width:100px}
+@media(max-width:400px){
+  .topbar .actions{grid-template-columns:repeat(3,1fr)}
+  .stat .num{font-size:16px}
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1322,6 +1333,7 @@ function setView(view){
   const listEl=document.getElementById('listView');
   const ganttBtn=document.getElementById('viewGanttBtn');
   const listBtn=document.getElementById('viewListBtn');
+  const isMobile=window.innerWidth<=768;
   
   if(view==='gantt'){
     ganttEl.style.display='flex';
@@ -2343,6 +2355,7 @@ function loadProjectData(data){
   updateUndoButtons();
   calcAll();
   render();
+  if(currentView==='list')renderListView();
 }
 
 // AUTO-SAVE to localStorage

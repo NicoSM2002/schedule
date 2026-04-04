@@ -1776,26 +1776,29 @@ function toggleVoice(){
   recognition=new SpeechRecognition();
   recognition.lang='es-ES';
   recognition.interimResults=true;
-  recognition.continuous=false;
+  recognition.continuous=true;
   recognition.maxAlternatives=1;
   
   const input=document.getElementById('chatInput');
   const btn=document.getElementById('micBtn');
+  let fullTranscript='';
   
   recognition.onstart=()=>{
     isRecording=true;
+    fullTranscript='';
     btn.classList.add('recording');
     btn.textContent='⏹';
-    input.placeholder='Escuchando...';
+    input.placeholder='Escuchando... (click ⏹ para parar)';
   };
   
   recognition.onresult=(e)=>{
     let final='',interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+    for(let i=0;i<e.results.length;i++){
+      if(e.results[i].isFinal) final+=e.results[i][0].transcript+' ';
       else interim+=e.results[i][0].transcript;
     }
-    input.value=final||interim;
+    fullTranscript=final;
+    input.value=(fullTranscript+interim).trim();
   };
   
   recognition.onend=()=>{
@@ -1803,9 +1806,9 @@ function toggleVoice(){
     btn.classList.remove('recording');
     btn.textContent='🎤';
     input.placeholder='Escribe o habla...';
-    // Auto-send if we got text
+    // Don't auto-send — let user review and press Enter or Enviar
     if(input.value.trim()){
-      sendChat();
+      input.focus();
     }
   };
   
@@ -1814,7 +1817,7 @@ function toggleVoice(){
     btn.classList.remove('recording');
     btn.textContent='🎤';
     input.placeholder='Escribe o habla...';
-    if(e.error!=='no-speech'){
+    if(e.error!=='no-speech'&&e.error!=='aborted'){
       addMsg(`Error de voz: ${e.error}`,'error');
     }
   };

@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Drake Construction - Schedule Planner</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f0f2f5;--card:#fff;--primary:#1e3a5f;--accent:#2563eb;--accent2:#059669;--text:#1a2332;--muted:#64748b;--border:#e2e8f0;--row:36px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+
+/* TOP BAR */
+.topbar{background:var(--primary);color:#fff;padding:12px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:300;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.topbar h1{font-size:16px;font-weight:800;letter-spacing:-.3px}
+.topbar .sub{font-size:10px;opacity:.6;margin-top:2px}
+.topbar .actions{display:flex;gap:8px}
+.btn{padding:7px 16px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#1d4ed8}
+.btn-green{background:var(--accent2);color:#fff}
+.btn-green:hover{background:#047857}
+.btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.3)}
+.btn-outline:hover{background:rgba(255,255,255,.1)}
+
+/* CONFIG PANEL */
+.config{background:var(--card);border-bottom:2px solid var(--border);padding:16px 24px;display:flex;gap:24px;align-items:flex-end;flex-wrap:wrap;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.config-group{display:flex;flex-direction:column;gap:4px}
+.config-group label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.config-group select,.config-group input{padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:#fff}
+.config-group select:focus,.config-group input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.config-group select{min-width:140px}
+.config-group input[type=date]{min-width:160px}
+.stats{display:flex;gap:16px;margin-left:auto;align-items:center}
+.stat{text-align:center}
+.stat .num{font-size:22px;font-weight:800;color:var(--primary)}
+.stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase}
+
+/* MAIN LAYOUT */
+.main{display:flex;height:calc(100vh - 110px);overflow:hidden}
+
+/* LEFT: TASK LIST */
+.task-list{width:420px;min-width:420px;background:var(--card);border-right:2px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.task-list-header{display:grid;grid-template-columns:32px 1fr 60px 54px;padding:0 8px;height:38px;align-items:center;background:#f1f5f9;border-bottom:2px solid var(--border);font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+.task-list-body{overflow-y:auto;flex:1}
+.task-row{display:grid;grid-template-columns:32px 1fr 60px 54px;padding:0 8px;height:var(--row);align-items:center;border-bottom:1px solid #f5f7fa;transition:background .1s;cursor:pointer}
+.task-row:hover{background:#f0f7ff}
+.task-row.active-task{background:#ecfdf5}
+.task-row .tid{font-size:9px;color:var(--muted);text-align:center;font-weight:600}
+.task-row .tname{font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-row .tname.done{color:#a0aec0}
+.task-row .tname.active{color:#047857;font-weight:700}
+.task-row .tname.new-task{border-left:3px solid var(--accent);padding-left:6px}
+.task-row .tstart{font-size:10px;color:var(--muted)}
+.task-row .tdur{font-size:10px;color:var(--muted);text-align:center}
+
+/* RIGHT: GANTT */
+.gantt-area{flex:1;overflow:auto;position:relative}
+.gantt-header{height:38px;position:sticky;top:0;z-index:20;background:#f1f5f9;border-bottom:2px solid var(--border)}
+.gantt-body{position:relative}
+.month-lbl{position:absolute;top:4px;font-size:11px;font-weight:700;color:#2d3748}
+.day-num{position:absolute;top:18px;font-size:8px;color:var(--muted);text-align:center;font-weight:600}
+.day-wd{position:absolute;top:27px;font-size:7px;color:#cbd5e1;text-align:center}
+.g-month{position:absolute;top:0;width:1px;background:#c8d1db}
+.g-weekend{position:absolute;top:0;background:rgba(203,213,225,.2)}
+.g-today{position:absolute;top:0;width:2.5px;background:var(--accent);z-index:25;box-shadow:0 0 8px rgba(37,99,235,.3)}
+.g-today-lbl{position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;white-space:nowrap}
+.brow{position:absolute;left:0;height:var(--row);border-bottom:1px solid #f8fafc}
+.brow.alt{background:rgba(241,245,249,.3)}
+.tbar{position:absolute;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;box-shadow:0 1.5px 4px rgba(0,0,0,.12);cursor:pointer;z-index:10;transition:all .12s}
+.tbar:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.2);z-index:20}
+.tbar .bar-text{flex:1;overflow:hidden;text-overflow:ellipsis;pointer-events:auto;cursor:pointer;z-index:2}
+.tbar .resize-handle{position:absolute;top:0;width:8px;height:100%;cursor:col-resize;z-index:3;opacity:0;transition:opacity .15s}
+.tbar:hover .resize-handle{opacity:1}
+.tbar .resize-left{left:-2px;border-radius:4px 0 0 4px;background:rgba(255,255,255,.4)}
+.tbar .resize-right{right:-2px;border-radius:0 4px 4px 0;background:rgba(255,255,255,.4)}
+.tbar .connect-point{position:absolute;right:-6px;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid #8294a8;cursor:crosshair;z-index:4;opacity:0;transition:opacity .15s}
+.tbar:hover .connect-point{opacity:1}
+.tbar.dragging{opacity:.7;z-index:30!important;cursor:grabbing}
+.connect-line{position:absolute;pointer-events:none;z-index:25}
+.drop-target{box-shadow:0 0 0 3px var(--accent)!important;z-index:21!important}
+.tbar.done{opacity:.4}
+.tbar.active-bar{box-shadow:0 2px 8px rgba(0,0,0,.25),inset 0 0 0 2px rgba(255,255,255,.3)}
+.tbar-label{position:absolute;font-size:10px;font-weight:500;color:#4a5568;white-space:nowrap;pointer-events:none;z-index:8}
+.arr-svg{position:absolute;top:0;left:0;z-index:5}
+.arr-svg .dep-group{cursor:pointer;pointer-events:all}
+.arr-svg .dep-group:hover polyline{stroke:#dc2626;stroke-width:2.5}
+.arr-svg .dep-group:hover polygon{fill:#dc2626}
+.arr-svg .dep-hitarea{stroke:transparent;stroke-width:12;fill:none;pointer-events:stroke}
+
+/* CHAT PANEL */
+.chat-panel{width:340px;min-width:340px;background:var(--card);border-left:2px solid var(--border);display:flex;flex-direction:column;transition:all .2s;overflow:hidden}
+.chat-panel.collapsed{width:40px;min-width:40px}
+.chat-panel.collapsed .chat-body{display:none}
+.chat-panel.collapsed .chat-header span:first-child{display:none}
+.chat-header{background:var(--primary);color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;flex-shrink:0;font-size:13px;font-weight:700}
+.chat-toggle{font-size:14px;transition:transform .2s}
+.chat-panel.collapsed .chat-toggle{transform:rotate(180deg)}
+.chat-body{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.chat-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.msg{padding:10px 14px;border-radius:10px;font-size:12px;line-height:1.5;max-width:95%;word-wrap:break-word}
+.msg.ai{background:#f0f4f8;color:#1a2332;align-self:flex-start;border-bottom-left-radius:3px}
+.msg.user{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+.msg.action{background:#ecfdf5;color:#047857;align-self:flex-start;border-left:3px solid #059669;font-size:11px}
+.msg.error{background:#fef2f2;color:#dc2626;align-self:flex-start;border-left:3px solid #dc2626;font-size:11px}
+.chat-input-area{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0}
+.chat-input-area input{flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit}
+.chat-input-area input:focus{outline:none;border-color:var(--accent)}
+.chat-send{padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+.chat-send:hover{background:#1d4ed8}
+.chat-mic{padding:8px 10px;background:#f1f5f9;border:1.5px solid var(--border);border-radius:8px;font-size:16px;cursor:pointer;transition:all .15s;line-height:1}
+.chat-mic:hover{background:#e2e8f0}
+.chat-mic.recording{background:#fee2e2;border-color:#dc2626;animation:pulse-mic 1s infinite}
+@keyframes pulse-mic{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.3)}50%{box-shadow:0 0 0 8px rgba(220,38,38,0)}}
+
+/* EDIT MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;display:none;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:12px;padding:24px;width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal h2{font-size:16px;margin-bottom:16px;color:var(--primary)}
+.modal .field{margin-bottom:12px}
+.modal .field label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+.modal .field input,.modal .field select{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit}
+.modal .field-row{display:flex;gap:12px}
+.modal .field-row .field{flex:1}
+.modal .pred-list{font-size:11px;color:var(--muted);margin-top:4px}
+.modal .succ-list{font-size:11px;color:var(--accent);margin-top:4px}
+.modal select{padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+
+/* EXPORT MODAL */
+.export-area{width:100%;height:200px;font-family:'Courier New',monospace;font-size:10px;border:1px solid var(--border);border-radius:6px;padding:8px;resize:none}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>Drake Construction — Schedule Planner</h1>
+    <div class="sub">7422 Mountjoy Dr, Huntington Beach, CA 92648 — 714-841-5285</div>
+  </div>
+  <div class="actions">
+    <button class="btn btn-outline" onclick="undo()" id="undoBtn" disabled style="opacity:.4;padding:7px 10px" title="Undo (Ctrl+Z)">↩ Undo</button>
+    <button class="btn btn-outline" onclick="redo()" id="redoBtn" disabled style="opacity:.4;padding:7px 10px" title="Redo (Ctrl+Y)">↪ Redo</button>
+    <span style="width:1px;height:20px;background:rgba(255,255,255,.2)"></span>
+    <button class="btn btn-green" onclick="openAddTask()" style="background:#059669">+ Add Task</button>
+    <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
+    <button class="btn btn-primary" onclick="exportGanttHTML()">Export Gantt HTML</button>
+  </div>
+</div>
+
+<div class="config">
+  <div class="config-group">
+    <label>Project Name</label>
+    <input type="text" id="projName" value="New Project" style="min-width:200px">
+  </div>
+  <div class="config-group">
+    <label>Number of Floors</label>
+    <select id="floors" onchange="changeFloors()">
+      <option value="1">1 Floor</option>
+      <option value="2" selected>2 Floors</option>
+      <option value="3">3 Floors</option>
+    </select>
+  </div>
+  <div class="config-group">
+    <label>Project Start Date</label>
+    <input type="date" id="startDate" value="2026-01-01" onchange="changeStart()">
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="num" id="statTasks">0</div><div class="lbl">Tasks</div></div>
+    <div class="stat"><div class="num" id="statDays">0</div><div class="lbl">Biz Days</div></div>
+    <div class="stat"><div class="num" id="statEnd">—</div><div class="lbl">Completion</div></div>
+  </div>
+</div>
+<div style="background:#fff;border-bottom:1px solid var(--border);padding:8px 24px;display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+  <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-right:4px">Phases:</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#4A6FA5;display:inline-block"></span>Pre-Con</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#48C9B0;display:inline-block"></span>Site Work</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#5DADE2;display:inline-block"></span>Foundation</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#82B541;display:inline-block"></span>Framing</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#8B5E3C;display:inline-block"></span>Roofing</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#E74C3C;display:inline-block"></span>MEP</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#A8BF30;display:inline-block"></span>Inspections</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#2C3E50;display:inline-block"></span>Exterior</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#7F8C8D;display:inline-block"></span>Insul/Drywall</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#34495E;display:inline-block"></span>Win/Doors</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#8E44AD;display:inline-block"></span>Interior Fin.</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#556B2F;display:inline-block"></span>Paint</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#27AE60;display:inline-block"></span>Ext. Finishes</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#C0392B;display:inline-block"></span>Flooring/Final</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#2D572C;display:inline-block"></span>Hardscape</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#4A4A4A;display:inline-block"></span>Hardware</span>
+  <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#922B21;display:inline-block"></span>Closeout</span>
+</div>
+
+<div class="main">
+  <div class="task-list">
+    <div class="task-list-header">
+      <span>#</span><span>Title</span><span>Start</span><span>Days</span>
+    </div>
+    <div class="task-list-body" id="taskListBody"></div>
+  </div>
+  <div class="gantt-area" id="ganttArea">
+    <div class="gantt-header" id="ganttHeader"></div>
+    <div class="gantt-body" id="ganttBody"></div>
+  </div>
+  <!-- AI Chat Panel -->
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-header" onclick="toggleChat()">
+      <span>🤖 AI Assistant</span>
+      <span class="chat-toggle" id="chatToggle">◀</span>
+    </div>
+    <div class="chat-body" id="chatBody">
+      <div class="chat-messages" id="chatMessages">
+        <div class="msg ai">Hola! Soy tu asistente de planificación. Puedes decirme cosas como:<br><br>
+        • "Agrega una tarea de Garage Door del 15 al 17 de junio en Exterior"<br>
+        • "Conecta Drywall con Insulation Install"<br>
+        • "Elimina la tarea Solar Panels"<br>
+        • "Mueve Painting-Interior al 1 de julio"<br>
+        • "Cambia la duración de Framing a 25 días"<br>
+        • "¿Cuándo termina el proyecto?"</div>
+      </div>
+      <div class="chat-input-area">
+        <input type="text" id="chatInput" placeholder="Escribe o habla..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button onclick="toggleVoice()" class="chat-mic" id="micBtn" title="Hablar">🎤</button>
+        <button onclick="sendChat()" class="chat-send">Enviar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 id="modalTitle" style="margin:0">Edit Task</h2>
+      <button class="btn" style="background:#fee2e2;color:#dc2626;font-size:11px;padding:5px 12px" onclick="deleteTask()">Delete Task</button>
+    </div>
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="editTitle">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Duration (business days)</label>
+        <input type="number" id="editDur" min="1" max="200">
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="editPhase"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Start Date Override (leave empty for auto)</label>
+      <div class="field-row">
+        <input type="date" id="editStart" style="flex:1">
+        <button class="btn" style="background:#f1f5f9;color:var(--muted);font-size:10px;padding:6px 10px;white-space:nowrap" onclick="document.getElementById('editStart').value='';"><span style="font-size:12px">✕</span> Clear</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Predecessors</label>
+      <div id="editPredsContainer"></div>
+      <div style="display:flex;gap:6px;margin-top:6px;align-items:center">
+        <select id="addPredTask" style="flex:1;padding:6px 8px;border:1.5px solid var(--border);border-radius:5px;font-size:11px"></select>
+        <select id="addPredType" style="width:80px;padding:6px 8px;border:1.5px solid var(--border);border-radius:5px;font-size:11px">
+          <option value="FS">FS</option>
+          <option value="SS">SS</option>
+        </select>
+        <button class="btn" style="background:#eff6ff;color:var(--accent);font-size:11px;padding:5px 10px;white-space:nowrap" onclick="addPredecessor()">+ Add</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Tasks that Follow</label>
+      <div class="succ-list" id="editSuccs"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" style="color:var(--text);border-color:var(--border)" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal-bg" id="addModal">
+  <div class="modal">
+    <h2 style="margin-bottom:16px">Add New Task</h2>
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="addTitle" placeholder="e.g. Garage Door Installation">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Category</label>
+        <select id="addPhase"></select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Start Date</label>
+        <input type="date" id="addStart">
+      </div>
+      <div class="field">
+        <label>End Date</label>
+        <input type="date" id="addEnd">
+      </div>
+    </div>
+    <p style="font-size:9px;color:var(--muted);margin-top:-4px;margin-bottom:8px">Duration is calculated automatically from start/end dates (business days only).</p>
+    <div class="field">
+      <label>Predecessor (optional — connect later if needed)</label>
+      <div class="field-row">
+        <select id="addAfterTask" style="flex:1"></select>
+        <select id="addAfterType" style="width:80px;padding:6px 8px;border:1.5px solid var(--border);border-radius:5px;font-size:11px">
+          <option value="FS">FS</option>
+          <option value="SS">SS</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" style="color:var(--text);border-color:var(--border)" onclick="document.getElementById('addModal').classList.remove('show')">Cancel</button>
+      <button class="btn btn-primary" onclick="addNewTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal-bg" id="exportModal">
+  <div class="modal">
+    <h2>Export for Buildertrend</h2>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Copy this data to import into Buildertrend or use as reference.</p>
+    <textarea class="export-area" id="exportData" readonly></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-outline" style="color:var(--text);border-color:var(--border)" onclick="document.getElementById('exportModal').classList.remove('show')">Close</button>
+      <button class="btn btn-primary" onclick="copyExport()">Copy to Clipboard</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// TEMPLATE TASKS - Base from Walnut Street reference
+// Organized by phase with floor-dependent flags
+// ============================================================
+const PHASES={PC:"Pre-Construction",SW:"Site Work",FD:"Foundation",FR:"Framing",RF:"Roofing",MP:"MEP Rough-In",IN:"Inspections",EX:"Exterior",ID:"Insulation/Drywall",WD:"Windows/Doors",IF:"Interior Finishes",EF:"Exterior Finishes",FL:"Flooring",KB:"Kitchen/Bath",MF:"MEP Finish",HS:"Hardscape",HT:"Hardware/Trim",XF:"Exterior Final",AP:"Appliances",CL:"Closeout"};
+const PCOL={PC:"#4A6FA5",SW:"#48C9B0",FD:"#5DADE2",FR:"#82B541",RF:"#8B5E3C",MP:"#E74C3C",IN:"#A8BF30",EX:"#2C3E50",ID:"#7F8C8D",WD:"#34495E",IF:"#8E44AD",EF:"#27AE60",FL:"#C0392B",KB:"#8E44AD",MF:"#E74C3C",HS:"#2D572C",HT:"#4A4A4A",XF:"#C0392B",AP:"#922B21",CL:"#922B21",PT:"#556B2F",CA:"#F39C12"};
+
+// minFloors: minimum floors needed for this task to appear
+// perFloor: if true, task repeats per floor
+function makeTemplate(floors){
+const T=[];
+let id=0;
+function add(t,d,pred,pt,ph,minF=1){id++;T.push({id,t,d,pred:[...pred],pt:[...pt],ph,fs:null,fe:null,minF});return id}
+
+// Pre-Con
+const a1=add("Architectural",25,[],[],"PC");
+const a2=add("Engineering Design",20,[a1],["SS"],"PC");
+const a3=add("Permits",20,[a2],["SS"],"PC");
+
+// Site/Foundation
+const a4=add("Site Work",floors===1?3:floors===2?65:65,[a3],["FS"],"SW");
+const a5=add("Underground Rough Plumbing",5,[a4],["FS"],"FD");
+const a6=add("Rebar Layout",3,[a5],["FS"],"FD");
+const a7=add("Rebar/Footing Inspection",1,[a6],["FS"],"FD");
+const a8=add("Footings",floors===1?19:11,[a7],["FS"],"FD");
+const a9=add("Footings Concrete Pour",1,[a8],["FS"],"FD");
+const a10=add("Footings Inspection",1,[a9],["FS"],"FD");
+const a11=add("Foundation Structural Observation",1,[a10],["FS"],"FD");
+const a12=add("Steel Beams Delivery",1,[a11],["FS"],"FD");
+const a13=add("Slab Rebar Inspection",1,[a12],["FS"],"FD");
+const a14=add("Slab Concrete Pour",1,[a13],["FS"],"FD");
+const a15=add("Foundation",floors===1?4:33,[a14],["FS"],"FD");
+
+// Framing per floor
+const framingIds=[];
+let lastSheathing=null;
+for(let f=1;f<=floors;f++){
+  const prev=f===1?a15:lastSheathing;
+  const label=floors===1?"Framing":`Framing ${f===1?'1st':f===2?'2nd':'3rd'} Floor`;
+  const dur=floors===1?20:f===1?34:30;
+  const fr=add(label,dur,[prev],["FS"],"FR");
+  framingIds.push(fr);
+  if(f===1&&floors>1){
+    add("Elevator Walk-Through",1,[fr],["SS"],"FR");
+  }
+  add("Scaffolding Set Up",4,[fr],["SS"],"FR");
+  const trash=add("Trash Pick Up",1,[fr],["FS"],"FR");
+  const so=add(`${floors===1?'':f===1?'1st Fl. ':f===2?'2nd Fl. ':'3rd Fl. '}Sheathing Structural Obs.`,1,[trash],["FS"],"FR");
+  const si=add(`${floors===1?'':f===1?'1st Fl. ':f===2?'2nd Fl. ':'3rd Fl. '}Sheathing City Inspection`,1,[so],["FS"],"FR");
+  lastSheathing=si;
+  if(f<floors){
+    add(`${f===1?'1st Fl. ':'2nd Fl. '}Sheathing City Insp. #2`,1,[si],["FS"],"FR");
+    lastSheathing=id;
+  }
+}
+
+const lastFrame=framingIds[framingIds.length-1];
+add("Walk-Through Meeting #1",1,[lastFrame],["FS"],"FR");
+
+// Roofing
+const ash=add("Apply Sheathing",4,[lastFrame],["SS"],"RF");
+const rmd=add("Roofing Materials Delivery",1,[ash],["FS"],"RF");
+const ir=add("Install Roof",13,[rmd],["FS"],"RF");
+const wtr=add("Walk-Through With Roofer",1,[ir],["FS"],"RF");
+const rdi=add("Roof Dry-In Inspection",1,[ir],["FS"],"RF");
+const rci=add("Roof City Inspection",6,[rdi],["FS"],"RF");
+add("Prep And Paint Fascia",10,[rci],["FS"],"RF");
+add("Building Height Certificate",1,[lastSheathing],["FS"],"RF");
+
+// MEP
+const hm=add("HVAC Meeting",1,[lastFrame],["SS"],"MP");
+const hr=add("HVAC Rough In",17,[hm],["FS"],"MP");
+const hd=add("HVAC Ductwork Installation",26,[hr],["SS"],"MP");
+const pr=add("Plumbing Rough In",25,[lastFrame],["SS"],"MP");
+const er=add("Electrical Rough-In",28,[lastFrame],["SS"],"MP");
+add("Solar Electrical Run",1,[lastSheathing],["FS"],"MP");
+add("Solar Panels Installation",3,[id],["FS"],"MP");
+add("Fire Sprinkler Installation",floors===1?30:51,[lastSheathing],["FS"],"MP");
+add("Dryer Vent Installation",1,[pr],["FS"],"MP");
+add("Meeting With SoCalGas",1,[hr],["SS"],"MP");
+
+// Inspections
+const ei=add("Electrical Inspection",1,[er],["FS"],"IN");
+const rpi=add("Rough Plumbing Inspection",1,[pr],["FS"],"IN");
+const hri=add("HVAC Rough Inspection",1,[hd],["FS"],"IN");
+const ci=add("Combo Inspection",1,[ei,rpi,hri],["FS","FS","FS"],"IN");
+add("Walk-Through Meeting #2",1,[ci],["FS"],"IN");
+
+// Exterior
+const em=add("Exterior Masonry",25,[ash],["SS"],"EX");
+const hw=add("House Wrap",4,[rpi],["FS"],"EX");
+const ed=add("Exterior Doors",floors===1?5:7,[hw],["FS"],"EX");
+const iw=add("Install Windows",floors===1?5:15,[hw],["FS"],"EX");
+add("Deck Drains Walk-Through",1,[lastSheathing],["FS"],"EX");
+add("Deck Drains & Waterproof",6,[id],["FS"],"EX");
+add("Hot Mop",1,[hri],["FS"],"EX");
+const ppf=T.find(x=>x.t==="Prep And Paint Fascia");
+add("Walk-in Showers Framing",12,[ppf?ppf.id:rci],["SS"],"EX");
+add("Interior Soffits",4,[id-1],["FS"],"EX");
+add("Stucco",21,[hw],["FS"],"EX");
+const sid=add("Install Siding",12,[hw],["FS"],"EF");
+
+// Insulation/Drywall
+const ins=add("Insulation Install",floors===1?2:3,[ci],["FS"],"ID");
+const insi=add("Insulation Inspection",1,[ins],["FS"],"ID");
+const il=add("Interior Lath",1,[insi],["FS"],"ID");
+const dw=add("Drywall",floors===1?8:15,[il],["FS"],"ID");
+const dwi=add("Drywall Inspection",1,[dw],["FS"],"ID");
+add("Float Showers",2,[dwi],["FS"],"ID");
+const dwm=add("Drywall Mud",14,[dwi],["FS"],"ID");
+
+// Windows/Doors
+add("Window Delivery Day",1,[lastFrame],["FS"],"WD");
+add("Main Entrance Door Delivery",1,[dwm],["SS"],"WD");
+add("Front Door Installation",2,[id],["FS"],"WD");
+const idd=add("Interior Doors Delivery",1,[dwm],["FS"],"WD");
+const idi=add("Interior Doors Installation",7,[idd],["FS"],"WD");
+const wsf=T.find(x=>x.t==="Walk-in Showers Framing");
+add("Pocket Door Frames Delivery",1,[wsf?wsf.id:dw],["FS"],"WD");
+add("Windows Casing Installation",4,[idi],["SS"],"WD");
+const wci=id;
+
+// Interior Finishes
+const pw=add("Prime Walls",5,[dwm],["FS"],"IF");
+const bti=add("Bathrooms Tile Installation",20,[pw],["FS"],"IF");
+const cab=add("Cabinet Install",10,[pw],["FS"],"IF");
+const imw=add("Interior Millwork",floors===1?10:15,[pw],["FS"],"IF");
+const pi=add("Painting-Interior",12,[imw],["FS"],"PT");
+const pcab=add("Paint Cabinets",14,[cab],["FS"],"IF");
+add("Drywall Repairs",3,[pcab],["FS"],"IF");
+const dwr=id;
+add("Wallpaper Installation",12,[pi],["FS"],"IF");
+add("Prep and Prime Casing",4,[wci],["FS"],"IF");
+add("Cabinet Hardware Installation",3,[pcab],["FS"],"IF");
+add("Bath Stone Installation",1,[bti],["FS"],"KB");
+add("Shower Glass Takeoff",1,[id],["FS"],"KB");
+
+// Exterior Finishes
+const pe=add("Painting-Exterior",14,[sid],["FS"],"PT");
+add("Rain Gutter Installation",4,[dwr],["FS"],"EF");
+add("Garage Door Installation",2,[pe],["FS"],"EF");
+
+// Flooring
+const fl=add("Flooring Install",13,[pi],["FS"],"FL");
+if(floors>1){
+  const str=add("Stair Treads & Risers",8,[fl],["FS"],"FL");
+  add("Stair Railing Installation",5,[str],["FS"],"FL");
+  add("Stairs Balusters Installation",1,[id],["FS"],"FL");
+}
+add("Baseboards Installation",8,[fl],["FS"],"IF");
+
+// Kitchen/Bath
+const ct=add("Countertop Install",5,[cab],["FS"],"KB");
+add("Kitchen & Laundry Backsplash",3,[ct],["FS"],"KB");
+add("Plumbing Trim Work",2,[ct],["FS"],"MF");
+
+// Hardscape
+const fw=add("Flatwork",10,[pe],["FS"],"HS");
+add("Hardscape Work",12,[fw],["FS"],"HS");
+add("Landscaping/Finish Grade",11,[fw],["FS"],"HS");
+
+// MEP Finish
+const gm=add("Gas Meter Installation",11,[pe],["FS"],"MF");
+add("Gas Service Line Inspection",1,[gm],["FS"],"MF");
+const hf=add("HVAC Finish",4,[fl],["FS"],"MF");
+const lf=add("Light Fixture Install",4,[fl],["FS"],"MF");
+const pf=add("Plumbing Fixtures Install",4,[fl],["FS"],"MF");
+add("HVAC Registers Installation",1,[pcab],["FS"],"MF");
+const he=add("HVAC Equipment Installation",2,[hf],["FS"],"MF");
+const ep=add("Edison Panel",1,[gm],["FS"],"MF");
+const efi=add("Electrical Final Inspection",1,[ep],["FS"],"MF");
+add("Fire Sprinkler Final Inspection",1,[he],["FS"],"MF");
+add("Solar Panel Equipment Installation",1,[efi],["FS"],"MF");
+
+// Hardware/Trim
+const ihw=add("Interior Hardware Install",5,[hf,lf,pf],["FS","FS","FS"],"HT");
+add("Decks, Porches, Railings",floors===1?10:25,[ihw],["FS"],"XF");
+add("Fences and Gates",5,[ihw],["FS"],"XF");
+add("Mirrors and Glasswork",3,[ihw],["FS"],"HT");
+const ft=add("Finish Trim",9,[ihw],["FS"],"HT");
+add("Remove Temp Fence",1,[efi],["FS"],"XF");
+
+// Closeout
+const ap=add("Appliance Installation",3,[ft],["FS"],"AP");
+add("Walk-Through Meeting #3",1,[ap],["FS"],"CL");
+const pl=add("Punch List",14,[id],["FS"],"CL");
+const dc=add("Interior Deep Cleaning",3,[pl],["FS"],"CL");
+add("Final touch up, punchout, clean.",15,[dc],["FS"],"CL");
+add("Final City Inspection",1,[id],["FS"],"CL");
+add("Completion/Final Walkthrough",1,[id],["FS"],"CL");
+
+return T;
+}
+
+// ============================================================
+// DATE HELPERS
+// ============================================================
+function addBiz(d,n){let c=new Date(d),a=0;while(a<n){c.setDate(c.getDate()+1);if(c.getDay()>0&&c.getDay()<6)a++}return c}
+function nextBiz(d){let c=new Date(d);while(c.getDay()===0||c.getDay()===6)c.setDate(c.getDate()+1);return c}
+function fmtD(d){return d.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'})}
+function fmtShort(d){return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`}
+function toISO(d){return d.toISOString().split('T')[0]}
+
+// ============================================================
+// STATE
+// ============================================================
+let tasks=[];
+let computed={};
+let editingId=null;
+
+function initTasks(){
+  const floors=parseInt(document.getElementById('floors').value);
+  tasks=makeTemplate(floors);
+  // Apply overrides for start date
+  recalcAll();
+}
+
+function calcAll(){
+  computed={};
+  const startDate=new Date(document.getElementById('startDate').value+'T12:00:00');
+  const tm={};tasks.forEach(t=>tm[t.id]=t);
+
+  function calc(tid){
+    if(computed[tid])return computed[tid];
+    const t=tm[tid];
+    if(t.fs){computed[tid]={s:new Date(t.fs),e:new Date(t.fe)};return computed[tid]}
+    let st;
+    if(!t.pred.length)st=nextBiz(startDate);
+    else{
+      let lat=new Date(2020,0,1);
+      t.pred.forEach((pid,i)=>{
+        if(!tm[pid])return;
+        const r=calc(pid);
+        let c=t.pt[i]==='FS'?new Date(r.e.getTime()+864e5):new Date(r.s);
+        c=nextBiz(c);
+        if(c>lat)lat=c;
+      });
+      st=lat;
+    }
+    st=nextBiz(st);
+    const en=t.d>1?addBiz(st,t.d-1):new Date(st);
+    computed[tid]={s:st,e:en};
+    return computed[tid];
+  }
+
+  tasks.forEach(t=>calc(t.id));
+}
+
+function recalcAll(){
+  // Clear forced dates
+  tasks.forEach(t=>{t.fs=null;t.fe=null});
+  calcAll();
+  render();
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+const PPD=20,ROW_H=36,BAR_H=24,BAR_TOP=(ROW_H-BAR_H)/2;
+const TODAY=new Date(2026,3,3);
+
+function render(){
+  calcAll();
+  const sorted=[...tasks].sort((a,b)=>computed[a.id].s-computed[b.id].s||computed[a.id].e-computed[b.id].e);
+  
+  // Stats
+  document.getElementById('statTasks').textContent=tasks.length;
+  const lastTask=sorted[sorted.length-1];
+  const endDate=computed[lastTask.id].e;
+  document.getElementById('statEnd').textContent=fmtD(endDate).replace(/, \d{4}/,'');
+  // Count biz days
+  let bd=0;const st0=computed[sorted[0].id].s;let dd=new Date(st0);
+  while(dd<=endDate){if(dd.getDay()>0&&dd.getDay()<6)bd++;dd.setDate(dd.getDate()+1)}
+  document.getElementById('statDays').textContent=bd;
+
+  // Timeline range
+  const allD=tasks.flatMap(t=>[computed[t.id].s,computed[t.id].e]);
+  const dMin=new Date(Math.min(...allD.map(d=>d.getTime()))-5*864e5);
+  const dMax=new Date(Math.max(...allD.map(d=>d.getTime()))+10*864e5);
+  const TW=Math.ceil((dMax-dMin)/864e5)*PPD;
+  function dX(d){return Math.round((d-dMin)/864e5*PPD)}
+
+  // Task list
+  const tlb=document.getElementById('taskListBody');
+  let lh='';
+  sorted.forEach(t=>{
+    const{s,e}=computed[t.id];
+    lh+=`<div class="task-row" onclick="openEdit(${t.id})">
+      <span class="tid">${t.id}</span>
+      <span class="tname"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${PCOL[t.ph]||'#888'};margin-right:5px;flex-shrink:0;vertical-align:middle"></span>${t.t}</span>
+      <span class="tstart">${fmtShort(s)}</span>
+      <span class="tdur">${t.d}</span>
+    </div>`;
+  });
+  tlb.innerHTML=lh;
+
+  // Gantt header
+  const gh=document.getElementById('ganttHeader');
+  gh.style.width=TW+'px';
+  let hh='';let cm=null;const d=new Date(dMin);
+  while(d<=dMax){
+    const x=dX(d),mk=d.getFullYear()*100+d.getMonth();
+    if(mk!==cm){cm=mk;hh+=`<div class="month-lbl" style="left:${x}px">${d.toLocaleDateString('en',{month:'short',year:'numeric'})}</div>`}
+    const cx=x+PPD/2;
+    hh+=`<div class="day-num" style="left:${cx}px;width:${PPD}px;margin-left:${-PPD/2}px">${d.getDate()}</div>`;
+    d.setDate(d.getDate()+1);
+  }
+  gh.innerHTML=hh;
+
+  // Gantt body
+  const gb=document.getElementById('ganttBody');
+  gb.style.width=TW+'px';
+  const BH=sorted.length*ROW_H;
+  gb.style.height=BH+'px';
+  let bb='';
+
+  // Grid
+  const d2=new Date(dMin);let cm2=null;
+  while(d2<=dMax){
+    const x=dX(d2),mk=d2.getFullYear()*100+d2.getMonth();
+    if(mk!==cm2){cm2=mk;bb+=`<div class="g-month" style="left:${x}px;height:${BH}px"></div>`}
+    if(d2.getDay()===6)bb+=`<div class="g-weekend" style="left:${x}px;width:${PPD*2}px;height:${BH}px"></div>`;
+    d2.setDate(d2.getDate()+1);
+  }
+
+  // (no today line - this is pre-planning)
+
+  // Bars - with drag, resize handles, and connect points
+  const bi={};
+  // Store dMin/TW globally for drag calculations
+  window._dMin=dMin;window._TW=TW;window._PPD=PPD;window._sorted=sorted;
+  
+  sorted.forEach((t,idx)=>{
+    const{s,e}=computed[t.id];
+    const x1=dX(s),x2=dX(new Date(e.getTime()+864e5));
+    const bw=Math.max(x2-x1,PPD);
+    const rowY=idx*ROW_H;
+    const barY=rowY+BAR_TOP;
+    const col=PCOL[t.ph]||'#888';
+    
+    bb+=`<div class="brow${idx%2?' alt':''}" style="top:${rowY}px;height:${ROW_H}px;width:${TW}px"></div>`;
+    
+    const innerLbl=bw>120?t.t:'';
+    bb+=`<div class="tbar" data-tid="${t.id}" style="left:${x1}px;top:${barY}px;width:${bw}px;height:${BAR_H}px;background:${col}">
+      <div class="resize-handle resize-left" data-tid="${t.id}" data-side="left"></div>
+      <span class="bar-text">${innerLbl}</span>
+      <div class="resize-handle resize-right" data-tid="${t.id}" data-side="right"></div>
+      <div class="connect-point" data-tid="${t.id}" title="Drag to connect"></div>
+    </div>`;
+    if(bw<=120)bb+=`<div class="tbar-label" style="left:${x1+bw+5}px;top:${barY+5}px">${t.t}</div>`;
+    
+    bi[t.id]={cy:rowY+ROW_H/2,x1,x2:x1+bw,rowY,barY};
+  });
+  window._bi=bi;
+
+  // Arrows - clickable to delete
+  bb+=`<svg class="arr-svg" width="${TW}" height="${BH}">`;
+  sorted.forEach(t=>{
+    if(!t.pred.length)return;
+    const to=bi[t.id];if(!to)return;
+    t.pred.forEach((pid,i)=>{
+      const fr=bi[pid];if(!fr)return;
+      const fx=t.pt[i]==='FS'?fr.x2:fr.x1;
+      const fy=fr.cy,tox=to.x1-1,toy=to.cy;
+      const mx=fx+10;
+      let pts;
+      if(Math.abs(fy-toy)<3)pts=`${fx},${fy} ${tox},${toy}`;
+      else pts=`${fx},${fy} ${mx},${fy} ${mx},${toy} ${tox},${toy}`;
+      bb+=`<g class="dep-group" data-from="${pid}" data-to="${t.id}" onclick="deleteDep(${pid},${t.id})">`;
+      bb+=`<polyline class="dep-hitarea" points="${pts}"/>`;
+      bb+=`<polyline points="${pts}" stroke="#8294a8" stroke-width="1.2" fill="none" stroke-linejoin="round"/>`;
+      bb+=`<polygon points="${tox+1},${toy} ${tox-5},${toy-3} ${tox-5},${toy+3}" fill="#8294a8"/>`;
+      bb+=`</g>`;
+    });
+  });
+  bb+=`</svg>`;
+  gb.innerHTML=bb;
+}
+
+// ============================================================
+// PHASE OPTIONS BUILDER
+// ============================================================
+const PHASE_LIST=[
+  {code:"PC",name:"Pre-Construction"},{code:"SW",name:"Site Work"},{code:"FD",name:"Foundation"},
+  {code:"FR",name:"Framing"},{code:"RF",name:"Roofing"},{code:"MP",name:"MEP Rough-In"},
+  {code:"IN",name:"Inspections"},{code:"EX",name:"Exterior"},{code:"ID",name:"Insulation/Drywall"},
+  {code:"WD",name:"Windows/Doors"},{code:"IF",name:"Interior Finishes"},{code:"PT",name:"Paint"},
+  {code:"EF",name:"Exterior Finishes"},{code:"FL",name:"Flooring"},{code:"KB",name:"Kitchen/Bath"},
+  {code:"MF",name:"MEP Finish"},{code:"HS",name:"Hardscape"},{code:"HT",name:"Hardware/Trim"},
+  {code:"XF",name:"Exterior Final"},{code:"AP",name:"Appliances"},{code:"CL",name:"Closeout"}
+];
+
+function buildPhaseOptions(selectId, currentCode){
+  const sel=document.getElementById(selectId);
+  sel.innerHTML=PHASE_LIST.map(p=>`<option value="${p.code}"${p.code===currentCode?' selected':''}>${p.name}</option>`).join('');
+}
+
+function buildTaskDropdown(selectId, excludeId){
+  const sel=document.getElementById(selectId);
+  const sorted=[...tasks].sort((a,b)=>computed[a.id].s-computed[b.id].s);
+  sel.innerHTML='<option value="">(none)</option>'+sorted.filter(t=>t.id!==excludeId).map(t=>{
+    const{s}=computed[t.id];
+    return`<option value="${t.id}">${t.t} (${fmtShort(s)})</option>`;
+  }).join('');
+}
+
+// ============================================================
+// EDIT TASK
+// ============================================================
+let editPredsList=[];
+
+function openEdit(tid){
+  const t=tasks.find(x=>x.id===tid);
+  if(!t)return;
+  editingId=tid;
+  const{s,e}=computed[tid];
+  document.getElementById('modalTitle').textContent=`#${tid} ${t.t}`;
+  document.getElementById('editTitle').value=t.t;
+  document.getElementById('editDur').value=t.d;
+  document.getElementById('editStart').value=t.fs?toISO(t.fs):'';
+  
+  buildPhaseOptions('editPhase',t.ph);
+  buildTaskDropdown('addPredTask',tid);
+  
+  // Build editable predecessors list
+  editPredsList=t.pred.map((pid,i)=>({pid,type:t.pt[i]}));
+  renderEditPreds();
+  
+  // Successors (read-only)
+  const succs=tasks.filter(x=>x.pred.includes(tid)).map(x=>{
+    const{s:ss,e:se}=computed[x.id];
+    const i=x.pred.indexOf(tid);
+    return`<div style="padding:4px 0;font-size:11px;color:var(--accent)">→ ${x.t} (${x.pt[i]}) — ${fmtShort(ss)} to ${fmtShort(se)}</div>`;
+  }).join('');
+  document.getElementById('editSuccs').innerHTML=succs||'<span style="color:#a0aec0;font-size:11px">(none)</span>';
+  
+  document.getElementById('editModal').classList.add('show');
+}
+
+function renderEditPreds(){
+  const container=document.getElementById('editPredsContainer');
+  if(!editPredsList.length){
+    container.innerHTML='<span style="color:#a0aec0;font-size:11px">(none)</span>';
+    return;
+  }
+  container.innerHTML=editPredsList.map((p,i)=>{
+    const pt=tasks.find(x=>x.id===p.pid);
+    if(!pt)return'';
+    const{s,e}=computed[p.pid];
+    return`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f1f5f9">
+      <span style="width:10px;height:10px;border-radius:50%;background:${PCOL[pt.ph]||'#888'};flex-shrink:0"></span>
+      <span style="flex:1;font-size:11px">${pt.t} — <b>${p.type}</b> — ${fmtShort(s)} to ${fmtShort(e)}</span>
+      <button onclick="removePred(${i})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;padding:2px 6px" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function removePred(index){
+  editPredsList.splice(index,1);
+  renderEditPreds();
+}
+
+function addPredecessor(){
+  const taskId=parseInt(document.getElementById('addPredTask').value);
+  const type=document.getElementById('addPredType').value;
+  if(!taskId)return;
+  if(editPredsList.some(p=>p.pid===taskId))return;// no duplicates
+  editPredsList.push({pid:taskId,type});
+  renderEditPreds();
+}
+
+function closeModal(){
+  document.getElementById('editModal').classList.remove('show');
+  editingId=null;
+  editPredsList=[];
+}
+
+function saveTask(){
+  if(!editingId)return;
+  const t=tasks.find(x=>x.id===editingId);
+  if(!t)return;
+  saveState();
+  t.t=document.getElementById('editTitle').value;
+  t.d=parseInt(document.getElementById('editDur').value)||1;
+  t.ph=document.getElementById('editPhase').value;
+  
+  // Update predecessors
+  t.pred=editPredsList.map(p=>p.pid);
+  t.pt=editPredsList.map(p=>p.type);
+  
+  // Start date override
+  const startVal=document.getElementById('editStart').value;
+  if(startVal){
+    const sd=new Date(startVal+'T12:00:00');
+    t.fs=sd;
+    t.fe=t.d>1?addBiz(sd,t.d-1):new Date(sd);
+  } else {
+    t.fs=null;t.fe=null;
+  }
+  
+  closeModal();
+  calcAll();
+  render();
+}
+
+// ============================================================
+// DELETE DEPENDENCY (click on arrow)
+// ============================================================
+function deleteDep(fromId, toId){
+  const t=tasks.find(x=>x.id===toId);
+  if(!t)return;
+  const fromTask=tasks.find(x=>x.id===fromId);
+  const fromName=fromTask?fromTask.t:`#${fromId}`;
+  if(!confirm(`Remove dependency: "${fromName}" → "${t.t}"?`))return;
+  saveState();
+  const idx=t.pred.indexOf(fromId);
+  if(idx>=0){
+    t.pred.splice(idx,1);
+    t.pt.splice(idx,1);
+  }
+  calcAll();
+  render();
+}
+
+// ============================================================
+// DELETE TASK
+// ============================================================
+function deleteTask(){
+  if(!editingId)return;
+  const t=tasks.find(x=>x.id===editingId);
+  if(!t)return;
+  
+  if(!confirm(`Delete "${t.t}"?\n\nTasks that depend on it will be reconnected to its predecessors automatically.`))return;
+  saveState();
+  
+  // Reconnect: any task that had this as predecessor gets this task's predecessors instead
+  const myPreds=t.pred;
+  const myPT=t.pt;
+  tasks.forEach(other=>{
+    const idx=other.pred.indexOf(editingId);
+    if(idx>=0){
+      other.pred.splice(idx,1);
+      other.pt.splice(idx,1);
+      // Add this task's predecessors (if any) to maintain chain
+      myPreds.forEach((pp,pi)=>{
+        if(!other.pred.includes(pp)){
+          other.pred.push(pp);
+          other.pt.push(myPT[pi]);
+        }
+      });
+    }
+  });
+  
+  // Remove task
+  tasks=tasks.filter(x=>x.id!==editingId);
+  
+  closeModal();
+  calcAll();
+  render();
+}
+
+// ============================================================
+// ADD NEW TASK
+// ============================================================
+function openAddTask(){
+  document.getElementById('addTitle').value='';
+  document.getElementById('addStart').value='';
+  document.getElementById('addEnd').value='';
+  buildPhaseOptions('addPhase','EX');
+  calcAll();
+  buildTaskDropdown('addAfterTask',null);
+  document.getElementById('addModal').classList.add('show');
+}
+
+function countBizDays(start,end){
+  let count=0;const d=new Date(start);
+  while(d<=end){if(d.getDay()>0&&d.getDay()<6)count++;d.setDate(d.getDate()+1)}
+  return Math.max(count,1);
+}
+
+function addNewTask(){
+  const title=document.getElementById('addTitle').value.trim();
+  if(!title){alert('Enter a task title');return}
+  saveState();
+  
+  const ph=document.getElementById('addPhase').value;
+  const afterId=parseInt(document.getElementById('addAfterTask').value)||0;
+  const afterType=document.getElementById('addAfterType').value;
+  const startVal=document.getElementById('addStart').value;
+  const endVal=document.getElementById('addEnd').value;
+  
+  let fs=null,fe=null,dur=5;
+  
+  if(startVal&&endVal){
+    // Both dates given — calculate duration
+    fs=new Date(startVal+'T12:00:00');
+    fe=new Date(endVal+'T12:00:00');
+    dur=countBizDays(fs,fe);
+  } else if(startVal){
+    // Only start — use default 5 days
+    fs=new Date(startVal+'T12:00:00');
+    fe=addBiz(fs,dur-1);
+  } else if(endVal){
+    // Only end — no predecessor, no start? just use end as start for 1 day
+    fs=new Date(endVal+'T12:00:00');
+    fe=new Date(endVal+'T12:00:00');
+    dur=1;
+  }
+  // If no dates and no predecessor, task won't have a position — that's okay, 
+  // it will default to project start and user can connect it later
+  
+  const newId=Math.max(...tasks.map(t=>t.id))+1;
+  
+  const newTask={
+    id:newId,
+    t:title,
+    d:dur,
+    pred:afterId?[afterId]:[],
+    pt:afterId?[afterType]:[],
+    ph:ph,
+    fs:fs,fe:fe,minF:1
+  };
+  
+  tasks.push(newTask);
+  
+  document.getElementById('addModal').classList.remove('show');
+  calcAll();
+  render();
+}
+
+// ============================================================
+// CONFIG CHANGES
+// ============================================================
+function changeFloors(){initTasks()}
+function changeStart(){
+  tasks.forEach(t=>{t.fs=null;t.fe=null});
+  calcAll();render();
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+function exportCSV(){
+  calcAll();
+  const sorted=[...tasks].sort((a,b)=>computed[a.id].s-computed[b.id].s);
+  let csv='ID,Title,Duration,Start,End,Predecessors,Predecessor Types\n';
+  sorted.forEach(t=>{
+    const{s,e}=computed[t.id];
+    const preds=t.pred.map((p,i)=>`${p}${t.pt[i]}`).join('; ');
+    csv+=`${t.id},"${t.t}",${t.d} days,${fmtD(s)},${fmtD(e)},"${preds}"\n`;
+  });
+  
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`Schedule_${document.getElementById('projName').value.replace(/\s/g,'_')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// EXPORT GANTT HTML
+// ============================================================
+function exportGanttHTML(){
+  calcAll();
+  const projName=document.getElementById('projName').value||'Project';
+  const sorted=[...tasks].sort((a,b)=>computed[a.id].s-computed[b.id].s||computed[a.id].e-computed[b.id].e);
+  const allD=tasks.flatMap(t=>[computed[t.id].s,computed[t.id].e]);
+  const dMin=new Date(Math.min(...allD.map(d=>d.getTime()))-5*864e5);
+  const dMax=new Date(Math.max(...allD.map(d=>d.getTime()))+10*864e5);
+  const xPPD=22,xROW=38,xBAR=27,xBT=(xROW-xBAR)/2;
+  const TW=Math.ceil((dMax-dMin)/864e5)*xPPD;
+  const BH=sorted.length*xROW;
+  function dX(d){return Math.round((d-dMin)/864e5*xPPD)}
+  const WDS=['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  // Header
+  let hdr='';let cm=null;const dd=new Date(dMin);
+  while(dd<=dMax){
+    const x=dX(dd),mk=dd.getFullYear()*100+dd.getMonth();
+    if(mk!==cm){cm=mk;hdr+=`<div style="position:absolute;top:4px;left:${x}px;font-size:13px;font-weight:700;color:#2d3748">${dd.toLocaleDateString('en',{month:'long',year:'numeric'})}</div>`}
+    const cx=x+xPPD/2;
+    hdr+=`<div style="position:absolute;top:22px;left:${cx}px;width:${xPPD}px;margin-left:${-xPPD/2}px;font-size:9px;color:#4a5568;text-align:center;font-weight:600">${dd.getDate()}</div>`;
+    hdr+=`<div style="position:absolute;top:36px;left:${cx}px;width:${xPPD}px;margin-left:${-xPPD/2}px;font-size:7.5px;color:#a0aec0;text-align:center">${WDS[dd.getDay()]}</div>`;
+    dd.setDate(dd.getDate()+1);
+  }
+
+  // Body
+  let body='';
+  const d2=new Date(dMin);let cm2=null;
+  while(d2<=dMax){
+    const x=dX(d2),mk=d2.getFullYear()*100+d2.getMonth();
+    if(mk!==cm2){cm2=mk;body+=`<div style="position:absolute;top:0;left:${x}px;width:1px;height:${BH}px;background:#c8d1db"></div>`}
+    if(d2.getDay()===6)body+=`<div style="position:absolute;top:0;left:${x}px;width:${xPPD*2}px;height:${BH}px;background:rgba(203,213,225,.2)"></div>`;
+    d2.setDate(d2.getDate()+1);
+  }
+
+  const bi={};
+  sorted.forEach((t,idx)=>{
+    const{s,e}=computed[t.id];
+    const x1=dX(s),x2=dX(new Date(e.getTime()+864e5));
+    const bw=Math.max(x2-x1,xPPD);
+    const rowY=idx*xROW,barY=rowY+xBT;
+    const col=PCOL[t.ph]||'#888';
+    if(idx%2)body+=`<div style="position:absolute;top:${rowY}px;left:0;width:${TW}px;height:${xROW}px;background:rgba(241,245,249,.35);border-bottom:1px solid #f5f7fa"></div>`;
+    else body+=`<div style="position:absolute;top:${rowY}px;left:0;width:${TW}px;height:${xROW}px;border-bottom:1px solid #f5f7fa"></div>`;
+    const lbl=bw>120?t.t:'';
+    body+=`<div style="position:absolute;left:${x1}px;top:${barY}px;width:${bw}px;height:${xBAR}px;background:${col};border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;box-shadow:0 1.5px 4px rgba(0,0,0,.12)">${lbl}</div>`;
+    if(bw<=120)body+=`<div style="position:absolute;left:${x1+bw+6}px;top:${barY+6}px;font-size:10px;font-weight:500;color:#4a5568;white-space:nowrap">${t.t}</div>`;
+    bi[t.id]={cy:rowY+xROW/2,x1,x2:x1+bw};
+  });
+
+  // Arrows
+  body+=`<svg style="position:absolute;top:0;left:0;width:${TW}px;height:${BH}px;pointer-events:none;z-index:5">`;
+  sorted.forEach(t=>{
+    if(!t.pred.length)return;
+    const to=bi[t.id];if(!to)return;
+    t.pred.forEach((pid,i)=>{
+      const fr=bi[pid];if(!fr)return;
+      const fx=t.pt[i]==='FS'?fr.x2:fr.x1;
+      const fy=fr.cy,tox=to.x1-1,toy=to.cy;
+      const mx=fx+12;
+      let pts;
+      if(Math.abs(fy-toy)<3)pts=`${fx},${fy} ${tox},${toy}`;
+      else pts=`${fx},${fy} ${mx},${fy} ${mx},${toy} ${tox},${toy}`;
+      body+=`<polyline points="${pts}" stroke="#8294a8" stroke-width="1.3" fill="none" stroke-linejoin="round"/>`;
+      body+=`<polygon points="${tox+1},${toy} ${tox-5},${toy-3.5} ${tox-5},${toy+3.5}" fill="#8294a8"/>`;
+    });
+  });
+  body+=`</svg>`;
+
+  // Left panel
+  let left='<div style="display:flex;align-items:flex-end;padding:0 10px;height:56px;background:#e8ecf2;border-bottom:2px solid #b0bcc8"><span style="width:200px;font-size:9px;font-weight:700;color:#5a6577;text-transform:uppercase;padding-bottom:5px">TITLE</span><span style="width:72px;font-size:9px;font-weight:700;color:#5a6577;text-transform:uppercase;padding-bottom:5px">START</span><span style="width:40px;font-size:9px;font-weight:700;color:#5a6577;text-transform:uppercase;text-align:center;padding-bottom:5px">DAYS</span></div>';
+  sorted.forEach(t=>{
+    const{s}=computed[t.id];
+    const ds=`${String(s.getMonth()+1).padStart(2,'0')}/${String(s.getDate()).padStart(2,'0')}/${String(s.getFullYear()).slice(2)}`;
+    left+=`<div style="display:flex;align-items:center;padding:0 10px;height:${xROW}px;border-bottom:1px solid #edf0f4"><span style="width:200px;font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.t}</span><span style="width:72px;font-size:10px;color:#6b7c90">${ds}</span><span style="width:40px;font-size:10px;color:#6b7c90;text-align:center">${t.d}</span></div>`;
+  });
+
+  const endDate=fmtD(computed[sorted[sorted.length-1].id].e);
+
+  const fullHTML=`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Schedule - ${projName}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#f5f6f8;color:#1a2332}
+.hdr{position:sticky;top:0;z-index:200;background:#1e2d3d;color:#fff;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;height:42px}
+.hdr h1{font-size:15px;font-weight:700}
+.hdr .s{font-size:10px;opacity:.6;margin-top:1px}
+.hdr .r{font-size:10px;opacity:.75}
+.wrap{overflow:auto;height:calc(100vh - 42px)}
+.cnt{display:flex}
+.lp{position:sticky;left:0;z-index:100;background:#fff;border-right:2px solid #c8d1db;min-width:320px;box-shadow:4px 0 10px rgba(0,0,0,.05)}
+.rp{flex:1;position:relative}
+.th{height:56px;position:relative;background:#e8ecf2;border-bottom:2px solid #b0bcc8;overflow:visible}
+.tb{position:relative}
+</style></head><body>
+<div class="hdr"><div><h1>Schedule - ${projName}</h1><div class="s">Drake Construction — 7422 Mountjoy Dr, Huntington Beach, CA 92648 — 714-841-5285</div></div><div class="r">Completion: ${endDate}</div></div>
+<div class="wrap"><div class="cnt">
+<div class="lp">${left}</div>
+<div class="rp">
+<div class="th" style="width:${TW}px">${hdr}</div>
+<div class="tb" style="width:${TW}px;height:${BH}px">${body}</div>
+</div>
+</div></div></body></html>`;
+
+  const blob=new Blob([fullHTML],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`Schedule_Gantt_${projName.replace(/\s/g,'_')}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// UNDO / REDO SYSTEM
+// ============================================================
+const undoStack=[];
+const redoStack=[];
+const MAX_UNDO=50;
+
+function saveState(){
+  // Deep clone tasks array
+  const snapshot=tasks.map(t=>({...t,pred:[...t.pred],pt:[...t.pt],fs:t.fs?new Date(t.fs):null,fe:t.fe?new Date(t.fe):null}));
+  undoStack.push(snapshot);
+  if(undoStack.length>MAX_UNDO)undoStack.shift();
+  redoStack.length=0; // clear redo on new action
+  updateUndoButtons();
+}
+
+function restoreState(snapshot){
+  tasks=snapshot.map(t=>({...t,pred:[...t.pred],pt:[...t.pt],fs:t.fs?new Date(t.fs):null,fe:t.fe?new Date(t.fe):null}));
+  calcAll();
+  render();
+}
+
+function undo(){
+  if(!undoStack.length)return;
+  // Save current state to redo
+  const current=tasks.map(t=>({...t,pred:[...t.pred],pt:[...t.pt],fs:t.fs?new Date(t.fs):null,fe:t.fe?new Date(t.fe):null}));
+  redoStack.push(current);
+  const prev=undoStack.pop();
+  restoreState(prev);
+  updateUndoButtons();
+}
+
+function redo(){
+  if(!redoStack.length)return;
+  const current=tasks.map(t=>({...t,pred:[...t.pred],pt:[...t.pt],fs:t.fs?new Date(t.fs):null,fe:t.fe?new Date(t.fe):null}));
+  undoStack.push(current);
+  const next=redoStack.pop();
+  restoreState(next);
+  updateUndoButtons();
+}
+
+function updateUndoButtons(){
+  const ub=document.getElementById('undoBtn');
+  const rb=document.getElementById('redoBtn');
+  ub.disabled=!undoStack.length;
+  ub.style.opacity=undoStack.length?'1':'.4';
+  rb.disabled=!redoStack.length;
+  rb.style.opacity=redoStack.length?'1':'.4';
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){e.preventDefault();undo()}
+  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){e.preventDefault();redo()}
+});
+
+// ============================================================
+// AUTO-FILL END DATE WHEN START IS PICKED (Add Task modal)
+// ============================================================
+document.getElementById('addStart').addEventListener('change',function(){
+  const endInput=document.getElementById('addEnd');
+  if(!endInput.value && this.value){
+    endInput.value=this.value;
+  }
+});
+
+// ============================================================
+// DRAG, RESIZE & CONNECT INTERACTIONS
+// ============================================================
+let dragState=null; // {type, tid, startX, origLeft, origWidth, bar, moved}
+let connectLine=null;
+
+function xToDate(x){
+  if(!window._dMin)return new Date();
+  const days=Math.round(x/window._PPD);
+  const d=new Date(window._dMin.getTime()+days*864e5);
+  return nextBiz(d);
+}
+
+function setupDragListeners(){
+  const gb=document.getElementById('ganttBody');
+  if(!gb)return;
+  
+  gb.addEventListener('mousedown',function(e){
+    const bar=e.target.closest('.tbar');
+    if(!bar)return;
+    const tid=parseInt(bar.dataset.tid);
+    const t=tasks.find(x=>x.id===tid);
+    if(!t)return;
+    
+    const rect=bar.getBoundingClientRect();
+    const gbRect=gb.getBoundingClientRect();
+    
+    // Check what was clicked
+    if(e.target.classList.contains('connect-point')){
+      // START CONNECTION DRAG
+      dragState={type:'connect',tid,startX:e.clientX,startY:e.clientY};
+      // Create temp SVG line
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.classList.add('connect-line');
+      svg.style.width=gb.scrollWidth+'px';
+      svg.style.height=gb.scrollHeight+'px';
+      svg.style.top='0';svg.style.left='0';
+      const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('stroke','#2563eb');line.setAttribute('stroke-width','2');
+      line.setAttribute('stroke-dasharray','6,3');
+      const ox=rect.right-gbRect.left+gb.scrollLeft;
+      const oy=rect.top+rect.height/2-gbRect.top+gb.scrollTop;
+      line.setAttribute('x1',ox);line.setAttribute('y1',oy);
+      line.setAttribute('x2',ox);line.setAttribute('y2',oy);
+      svg.appendChild(line);
+      gb.appendChild(svg);
+      connectLine={svg,line,ox,oy};
+      e.preventDefault();e.stopPropagation();
+      return;
+    }
+    
+    if(e.target.classList.contains('resize-handle')){
+      const side=e.target.dataset.side;
+      dragState={type:'resize-'+side,tid,startX:e.clientX,startY:e.clientY,origLeft:bar.offsetLeft,origWidth:bar.offsetWidth,bar,moved:false};
+      e.preventDefault();e.stopPropagation();
+      return;
+    }
+    
+    // BAR MOVE (click on bar text or bar itself)
+    if(e.target.classList.contains('bar-text')||e.target===bar){
+      dragState={type:'move',tid,startX:e.clientX,startY:e.clientY,origLeft:bar.offsetLeft,origWidth:bar.offsetWidth,bar,moved:false};
+      e.preventDefault();
+    }
+  });
+  
+  document.addEventListener('mousemove',function(e){
+    if(!dragState)return;
+    const dx=e.clientX-dragState.startX;
+    const dy=e.clientY-(dragState.startY||dragState.startX);
+    
+    // Mark as moved only if dragged more than 4px (prevents accidental drag on click)
+    if(Math.abs(dx)>4||Math.abs(dy)>4) dragState.moved=true;
+    if(!dragState.moved)return;
+    
+    // Add visual dragging state
+    if(dragState.bar&&!dragState.bar.classList.contains('dragging')){
+      dragState.bar.classList.add('dragging');
+      if(dragState.type==='move')dragState.bar.style.cursor='grabbing';
+    }
+    
+    if(dragState.type==='move'){
+      dragState.bar.style.left=(dragState.origLeft+dx)+'px';
+    }
+    else if(dragState.type==='resize-right'){
+      const newW=Math.max(window._PPD,dragState.origWidth+dx);
+      dragState.bar.style.width=newW+'px';
+    }
+    else if(dragState.type==='resize-left'){
+      const newL=dragState.origLeft+dx;
+      const newW=Math.max(window._PPD,dragState.origWidth-dx);
+      dragState.bar.style.left=newL+'px';
+      dragState.bar.style.width=newW+'px';
+    }
+    else if(dragState.type==='connect'&&connectLine){
+      const gbRect=document.getElementById('ganttBody').getBoundingClientRect();
+      const gb=document.getElementById('ganttBody');
+      const mx=e.clientX-gbRect.left+gb.scrollLeft;
+      const my=e.clientY-gbRect.top+gb.scrollTop;
+      connectLine.line.setAttribute('x2',mx);
+      connectLine.line.setAttribute('y2',my);
+      
+      // Highlight target bar
+      document.querySelectorAll('.tbar.drop-target').forEach(b=>b.classList.remove('drop-target'));
+      const target=document.elementFromPoint(e.clientX,e.clientY);
+      if(target){
+        const tbar=target.closest('.tbar');
+        if(tbar&&parseInt(tbar.dataset.tid)!==dragState.tid){
+          tbar.classList.add('drop-target');
+        }
+      }
+    }
+  });
+  
+  document.addEventListener('mouseup',function(e){
+    if(!dragState)return;
+    
+    if(dragState.type==='move'){
+      if(!dragState.moved){
+        // It was a click, not a drag — open edit modal
+        openEdit(dragState.tid);
+        dragState=null;
+        return;
+      }
+      const dx=e.clientX-dragState.startX;
+      const newLeft=dragState.origLeft+dx;
+      const newDate=xToDate(newLeft);
+      const t=tasks.find(x=>x.id===dragState.tid);
+      if(t){
+        saveState();
+        t.fs=newDate;
+        t.fe=t.d>1?addBiz(newDate,t.d-1):new Date(newDate);
+      }
+      dragState.bar.classList.remove('dragging');
+      dragState.bar.style.cursor='';
+      calcAll();render();
+    }
+    else if(dragState.type==='resize-right'){
+      const newW=Math.max(window._PPD,dragState.origWidth+(e.clientX-dragState.startX));
+      const newDays=Math.max(1,Math.round(newW/window._PPD));
+      const t=tasks.find(x=>x.id===dragState.tid);
+      if(t){
+        saveState();
+        const{s}=computed[t.id];
+        t.d=newDays;
+        t.fs=new Date(s);
+        t.fe=newDays>1?addBiz(new Date(s),newDays-1):new Date(s);
+      }
+      dragState.bar.classList.remove('dragging');
+      calcAll();render();
+    }
+    else if(dragState.type==='resize-left'){
+      const dx=e.clientX-dragState.startX;
+      const newLeft=dragState.origLeft+dx;
+      const newDate=xToDate(newLeft);
+      const origEnd=computed[dragState.tid].e;
+      const t=tasks.find(x=>x.id===dragState.tid);
+      if(t){
+        saveState();
+        t.fs=newDate;
+        t.fe=new Date(origEnd);
+        t.d=countBizDays(newDate,origEnd);
+      }
+      dragState.bar.classList.remove('dragging');
+      calcAll();render();
+    }
+    else if(dragState.type==='connect'){
+      document.querySelectorAll('.tbar.drop-target').forEach(b=>b.classList.remove('drop-target'));
+      if(connectLine)connectLine.svg.remove();
+      connectLine=null;
+      
+      // Find drop target
+      const target=document.elementFromPoint(e.clientX,e.clientY);
+      if(target){
+        const tbar=target.closest('.tbar');
+        if(tbar){
+          const targetId=parseInt(tbar.dataset.tid);
+          if(targetId&&targetId!==dragState.tid){
+            // Add predecessor: dragState.tid → targetId (source is predecessor of target)
+            const targetTask=tasks.find(x=>x.id===targetId);
+            if(targetTask&&!targetTask.pred.includes(dragState.tid)){
+              saveState();
+              targetTask.pred.push(dragState.tid);
+              targetTask.pt.push('FS');
+              // Clear forced dates so it recalculates
+              targetTask.fs=null;targetTask.fe=null;
+              calcAll();render();
+            }
+          }
+        }
+      }
+    }
+    
+    dragState=null;
+  });
+}
+
+// Run after first render
+setTimeout(setupDragListeners,200);
+
+// ============================================================
+// AI CHAT ASSISTANT
+// ============================================================
+function toggleChat(){
+  document.getElementById('chatPanel').classList.toggle('collapsed');
+}
+
+function addMsg(text, type='ai'){
+  const container=document.getElementById('chatMessages');
+  const div=document.createElement('div');
+  div.className=`msg ${type}`;
+  div.innerHTML=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function getScheduleSummary(){
+  calcAll();
+  const sorted=[...tasks].sort((a,b)=>computed[a.id].s-computed[b.id].s);
+  return sorted.map(t=>{
+    const{s,e}=computed[t.id];
+    const preds=t.pred.map((pid,i)=>{
+      const pt=tasks.find(x=>x.id===pid);
+      return pt?`${pt.t}(${t.pt[i]})`:''
+    }).filter(Boolean).join(', ');
+    return `ID:${t.id} | "${t.t}" | ${t.d}d | ${s.toISOString().split('T')[0]} to ${e.toISOString().split('T')[0]} | Phase:${t.ph} | Preds:[${preds}]`;
+  }).join('\n');
+}
+
+async function sendChat(){
+  const input=document.getElementById('chatInput');
+  const msg=input.value.trim();
+  if(!msg)return;
+  input.value='';
+  
+  addMsg(msg,'user');
+  const thinkingMsg=addMsg('Pensando...','ai');
+
+  const schedule=getScheduleSummary();
+  
+  const systemPrompt=`You are an AI assistant embedded in a construction schedule planner for Drake Construction. The user manages construction projects.
+
+CURRENT SCHEDULE (${tasks.length} tasks):
+${schedule}
+
+AVAILABLE PHASE CODES: PC=Pre-Construction, SW=Site Work, FD=Foundation, FR=Framing, RF=Roofing, MP=MEP Rough-In, IN=Inspections, EX=Exterior, ID=Insulation/Drywall, WD=Windows/Doors, IF=Interior Finishes, PT=Paint, EF=Exterior Finishes, FL=Flooring, KB=Kitchen/Bath, MF=MEP Finish, HS=Hardscape, HT=Hardware/Trim, XF=Exterior Final, AP=Appliances, CL=Closeout
+
+You must respond ONLY with a JSON object. No markdown, no backticks, no explanation outside the JSON.
+
+The JSON must have:
+- "message": string - friendly response to show the user (in the same language they used)
+- "actions": array of action objects to execute
+
+Action types:
+1. ADD: {"type":"add","title":"Task Name","duration":5,"phase":"EX","start":"2026-06-15","end":"2026-06-20","predecessorId":null,"predType":"FS"}
+   - start/end are optional. If both given, duration is auto-calculated.
+   - predecessorId is optional (ID number of the predecessor task, or null)
+2. DELETE: {"type":"delete","taskId":45}
+3. EDIT: {"type":"edit","taskId":23,"changes":{"title":"New Name","duration":10,"phase":"RF","start":"2026-05-01"}}
+   - changes only includes fields to modify
+4. CONNECT: {"type":"connect","fromId":10,"toId":15,"predType":"FS"}
+5. DISCONNECT: {"type":"disconnect","fromId":10,"toId":15}
+6. INFO: {"type":"info"} - no action, just answering a question
+
+Rules:
+- When the user says "connect A to B" or "A should go before B", fromId=A, toId=B
+- Dates must be YYYY-MM-DD format
+- If user gives a task name, find the closest matching task by name
+- If user asks a question (when does it end, how many tasks, etc), use type "info" with no actions
+- Respond in the same language the user writes in (Spanish or English)
+- Be concise in messages`;
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{role: "user", content: msg}]
+      })
+    });
+
+    if(!response.ok){
+      const err=await response.json();
+      throw new Error(err.error||'Server error');
+    }
+
+    const data = await response.json();
+    thinkingMsg.remove();
+
+    if(!data.content||!data.content.length){
+      addMsg('Error: No response received','error');
+      return;
+    }
+
+    const text=data.content[0].text;
+    let parsed;
+    try{
+      const clean=text.replace(/```json|```/g,'').trim();
+      parsed=JSON.parse(clean);
+    }catch(e){
+      addMsg(text,'ai');
+      return;
+    }
+
+    // Show message
+    if(parsed.message) addMsg(parsed.message,'ai');
+
+    // Execute actions
+    if(parsed.actions&&parsed.actions.length){
+      parsed.actions.forEach(act=>{
+        try{
+          executeAction(act);
+        }catch(err){
+          addMsg(`Error ejecutando acción: ${err.message}`,'error');
+        }
+      });
+    }
+
+  }catch(err){
+    thinkingMsg.remove();
+    addMsg(`Error de conexión: ${err.message}`,'error');
+  }
+}
+
+function executeAction(act){
+  switch(act.type){
+    case 'add':{
+      saveState();
+      const newId=Math.max(...tasks.map(t=>t.id))+1;
+      let fs=null,fe=null,dur=act.duration||5;
+      if(act.start&&act.end){
+        fs=new Date(act.start+'T12:00:00');
+        fe=new Date(act.end+'T12:00:00');
+        dur=countBizDays(fs,fe);
+      }else if(act.start){
+        fs=new Date(act.start+'T12:00:00');
+        fe=dur>1?addBiz(fs,dur-1):new Date(fs);
+      }
+      const pred=act.predecessorId?[act.predecessorId]:[];
+      const pt=act.predecessorId?[act.predType||'FS']:[];
+      tasks.push({id:newId,t:act.title,d:dur,pred,pt,ph:act.phase||'EX',fs,fe,minF:1});
+      addMsg(`✅ Tarea "${act.title}" agregada (${dur} días)`,'action');
+      calcAll();render();
+      break;
+    }
+    case 'delete':{
+      const t=tasks.find(x=>x.id===act.taskId);
+      if(!t){addMsg(`⚠️ Tarea #${act.taskId} no encontrada`,'error');return}
+      saveState();
+      const myPreds=t.pred,myPT=t.pt;
+      tasks.forEach(other=>{
+        const idx=other.pred.indexOf(act.taskId);
+        if(idx>=0){
+          other.pred.splice(idx,1);other.pt.splice(idx,1);
+          myPreds.forEach((pp,pi)=>{if(!other.pred.includes(pp)){other.pred.push(pp);other.pt.push(myPT[pi])}});
+        }
+      });
+      tasks=tasks.filter(x=>x.id!==act.taskId);
+      addMsg(`✅ Tarea "${t.t}" eliminada`,'action');
+      calcAll();render();
+      break;
+    }
+    case 'edit':{
+      const t=tasks.find(x=>x.id===act.taskId);
+      if(!t){addMsg(`⚠️ Tarea #${act.taskId} no encontrada`,'error');return}
+      saveState();
+      const ch=act.changes||{};
+      if(ch.title)t.t=ch.title;
+      if(ch.duration)t.d=ch.duration;
+      if(ch.phase)t.ph=ch.phase;
+      if(ch.start){
+        t.fs=new Date(ch.start+'T12:00:00');
+        t.fe=t.d>1?addBiz(t.fs,t.d-1):new Date(t.fs);
+      }
+      addMsg(`✅ Tarea "${t.t}" actualizada`,'action');
+      calcAll();render();
+      break;
+    }
+    case 'connect':{
+      const target=tasks.find(x=>x.id===act.toId);
+      if(!target){addMsg(`⚠️ Tarea #${act.toId} no encontrada`,'error');return}
+      if(target.pred.includes(act.fromId)){addMsg(`Ya están conectadas`,'ai');return}
+      saveState();
+      target.pred.push(act.fromId);
+      target.pt.push(act.predType||'FS');
+      target.fs=null;target.fe=null;
+      const from=tasks.find(x=>x.id===act.fromId);
+      addMsg(`✅ Conectado: "${from?from.t:'#'+act.fromId}" → "${target.t}" (${act.predType||'FS'})`,'action');
+      calcAll();render();
+      break;
+    }
+    case 'disconnect':{
+      const target=tasks.find(x=>x.id===act.toId);
+      if(!target){addMsg(`⚠️ Tarea #${act.toId} no encontrada`,'error');return}
+      const idx=target.pred.indexOf(act.fromId);
+      if(idx<0){addMsg(`No están conectadas`,'ai');return}
+      saveState();
+      target.pred.splice(idx,1);target.pt.splice(idx,1);
+      addMsg(`✅ Dependencia eliminada`,'action');
+      calcAll();render();
+      break;
+    }
+    case 'info':
+      break;
+    default:
+      addMsg(`Acción desconocida: ${act.type}`,'error');
+  }
+}
+
+// ============================================================
+// VOICE INPUT (Web Speech API)
+// ============================================================
+let recognition=null;
+let isRecording=false;
+
+function toggleVoice(){
+  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){
+    addMsg('Tu navegador no soporta reconocimiento de voz. Usa Chrome.','error');
+    return;
+  }
+  
+  if(isRecording){
+    stopVoice();
+    return;
+  }
+  
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SpeechRecognition();
+  recognition.lang='es-ES';
+  recognition.interimResults=true;
+  recognition.continuous=false;
+  recognition.maxAlternatives=1;
+  
+  const input=document.getElementById('chatInput');
+  const btn=document.getElementById('micBtn');
+  
+  recognition.onstart=()=>{
+    isRecording=true;
+    btn.classList.add('recording');
+    btn.textContent='⏹';
+    input.placeholder='Escuchando...';
+  };
+  
+  recognition.onresult=(e)=>{
+    let final='',interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    input.value=final||interim;
+  };
+  
+  recognition.onend=()=>{
+    isRecording=false;
+    btn.classList.remove('recording');
+    btn.textContent='🎤';
+    input.placeholder='Escribe o habla...';
+    // Auto-send if we got text
+    if(input.value.trim()){
+      sendChat();
+    }
+  };
+  
+  recognition.onerror=(e)=>{
+    isRecording=false;
+    btn.classList.remove('recording');
+    btn.textContent='🎤';
+    input.placeholder='Escribe o habla...';
+    if(e.error!=='no-speech'){
+      addMsg(`Error de voz: ${e.error}`,'error');
+    }
+  };
+  
+  recognition.start();
+}
+
+function stopVoice(){
+  if(recognition){
+    recognition.stop();
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+initTasks();
+</script>
+</body>
+</html>

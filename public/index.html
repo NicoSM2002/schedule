@@ -69,6 +69,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .task-list{width:420px;min-width:420px;background:var(--card);border-right:2px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
 .task-list-header{display:grid;grid-template-columns:32px 1fr 60px 54px;padding:0 8px;height:38px;align-items:center;background:#f1f5f9;border-bottom:2px solid var(--border);font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
 .task-list-body{overflow-y:auto;flex:1}
+.search-dropdown{position:absolute;top:100%;left:8px;right:8px;background:#fff;border:1.5px solid var(--accent);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);max-height:280px;overflow-y:auto;z-index:50}
+.search-item{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-size:11px;border-bottom:1px solid #f5f7fa;transition:background .1s}
+.search-item:last-child{border-bottom:none}
+.search-item:hover{background:#eff6ff}
+.search-item .si-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.search-item .si-name{flex:1;font-weight:500;color:var(--text)}
+.search-item .si-date{font-size:10px;color:var(--muted)}
 .task-row{display:grid;grid-template-columns:32px 1fr 60px 54px;padding:0 8px;height:var(--row);align-items:center;border-bottom:1px solid #f5f7fa;transition:background .1s;cursor:pointer}
 .task-row:hover{background:#f0f7ff}
 .task-row.active-task{background:#ecfdf5}
@@ -283,8 +290,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 
 <div class="main">
   <div class="task-list">
-    <div style="padding:6px 8px;border-bottom:1px solid var(--border);flex-shrink:0">
-      <input type="text" id="taskSearch" placeholder="🔍 Search tasks..." oninput="applySearch()" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;outline:none">
+    <div style="padding:6px 8px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative">
+      <input type="text" id="taskSearch" placeholder="🔍 Search tasks..." oninput="showSearchResults()" onfocus="showSearchResults()" style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;outline:none">
+      <div id="searchDropdown" class="search-dropdown" style="display:none"></div>
     </div>
     <div class="task-list-header">
       <span>#</span><span>Title</span><span>Start</span><span>Days</span>
@@ -795,6 +803,7 @@ function render(){
     bi[t.id]={cy:rowY+ROW_H/2,x1,x2:x1+bw,rowY,barY};
   });
   window._bi=bi;
+  window._sorted=sorted;
 
   // Arrows - clickable to delete
   bb+=`<svg class="arr-svg" width="${TW}" height="${BH}">`;
@@ -1144,9 +1153,90 @@ function applyFilter(){
 }
 
 function applySearch(){
-  searchTerm=document.getElementById('taskSearch').value.toLowerCase().trim();
+  searchTerm='';
   render();
 }
+
+function showSearchResults(){
+  const val=document.getElementById('taskSearch').value.toLowerCase().trim();
+  const dd=document.getElementById('searchDropdown');
+  
+  if(!val){
+    dd.style.display='none';
+    searchTerm='';
+    return;
+  }
+  
+  calcAll();
+  const matches=tasks.filter(t=>t.t.toLowerCase().includes(val))
+    .sort((a,b)=>computed[a.id].s-computed[b.id].s);
+  
+  if(!matches.length){
+    dd.innerHTML='<div style="padding:12px;color:var(--muted);font-size:11px;text-align:center">No tasks found</div>';
+    dd.style.display='block';
+    return;
+  }
+  
+  dd.innerHTML=matches.map(t=>{
+    const{s}=computed[t.id];
+    const ds=fmtShort(s);
+    return`<div class="search-item" onclick="goToTask(${t.id})">
+      <span class="si-dot" style="background:${PCOL[t.ph]||'#888'}"></span>
+      <span class="si-name">${t.t}</span>
+      <span class="si-date">${ds} · ${t.d}d</span>
+    </div>`;
+  }).join('');
+  dd.style.display='block';
+}
+
+function goToTask(tid){
+  // Close dropdown and clear search
+  document.getElementById('searchDropdown').style.display='none';
+  document.getElementById('taskSearch').value='';
+  searchTerm='';
+  render();
+  
+  // Find the task's bar position and scroll to it
+  const bi=window._bi;
+  if(!bi||!bi[tid])return;
+  const info=bi[tid];
+  
+  // Scroll Gantt to the task
+  const ganttArea=document.getElementById('ganttArea');
+  ganttArea.scrollLeft=Math.max(0,info.x1-200);
+  ganttArea.scrollTop=Math.max(0,info.rowY-150);
+  
+  // Flash highlight the bar
+  const bars=document.querySelectorAll(`.tbar[data-tid="${tid}"]`);
+  bars.forEach(bar=>{
+    bar.style.transition='box-shadow .2s';
+    bar.style.boxShadow='0 0 0 4px var(--accent), 0 4px 16px rgba(37,99,235,.4)';
+    bar.style.zIndex='30';
+    setTimeout(()=>{
+      bar.style.boxShadow='';
+      bar.style.zIndex='';
+    },2000);
+  });
+  
+  // Also scroll the task list to show this task
+  const rows=document.querySelectorAll('.task-row');
+  const sorted=window._sorted;
+  if(sorted){
+    const idx=sorted.findIndex(t=>t.id===tid);
+    if(idx>=0&&rows[idx]){
+      rows[idx].scrollIntoView({block:'center',behavior:'smooth'});
+      rows[idx].style.background='#dbeafe';
+      setTimeout(()=>rows[idx].style.background='',2000);
+    }
+  }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#taskSearch')&&!e.target.closest('#searchDropdown')){
+    document.getElementById('searchDropdown').style.display='none';
+  }
+});
 
 // ============================================================
 // EXPORT

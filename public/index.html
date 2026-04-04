@@ -139,13 +139,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
     <div class="sub">7422 Mountjoy Dr, Huntington Beach, CA 92648 — 714-841-5285</div>
   </div>
   <div class="actions">
-    <button class="btn btn-outline" onclick="undo()" id="undoBtn" disabled style="opacity:.4;padding:7px 10px" title="Undo (Ctrl+Z)">↩ Undo</button>
-    <button class="btn btn-outline" onclick="redo()" id="redoBtn" disabled style="opacity:.4;padding:7px 10px" title="Redo (Ctrl+Y)">↪ Redo</button>
+    <button class="btn btn-outline" onclick="newProject()" title="New Project">📄 New</button>
+    <button class="btn btn-outline" onclick="loadProject()" title="Load Project">📂 Load</button>
+    <button class="btn btn-outline" onclick="saveProject()" title="Save Project" style="background:rgba(5,150,105,.3);border-color:#059669">💾 Save</button>
+    <span style="width:1px;height:20px;background:rgba(255,255,255,.2)"></span>
+    <button class="btn btn-outline" onclick="undo()" id="undoBtn" disabled style="opacity:.4;padding:7px 10px" title="Undo (Ctrl+Z)">↩</button>
+    <button class="btn btn-outline" onclick="redo()" id="redoBtn" disabled style="opacity:.4;padding:7px 10px" title="Redo (Ctrl+Y)">↪</button>
     <span style="width:1px;height:20px;background:rgba(255,255,255,.2)"></span>
     <button class="btn btn-green" onclick="openAddTask()" style="background:#059669">+ Add Task</button>
-    <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
-    <button class="btn btn-primary" onclick="exportGanttHTML()">Export Gantt HTML</button>
+    <button class="btn btn-outline" onclick="exportCSV()">CSV</button>
+    <button class="btn btn-primary" onclick="exportGanttHTML()">Export Gantt</button>
   </div>
+  <input type="file" id="fileLoader" accept=".json" style="display:none" onchange="handleFileLoad(event)">
 </div>
 
 <div class="config">
@@ -712,6 +717,9 @@ function render(){
   });
   bb+=`</svg>`;
   gb.innerHTML=bb;
+  
+  // Auto-save to localStorage
+  autoSave();
 }
 
 // ============================================================
@@ -1664,9 +1672,142 @@ function stopVoice(){
 }
 
 // ============================================================
+// SAVE / LOAD / NEW PROJECT
+// ============================================================
+
+function serializeTasks(){
+  return tasks.map(t=>({
+    id:t.id, t:t.t, d:t.d, pred:[...t.pred], pt:[...t.pt], ph:t.ph,
+    fs:t.fs?t.fs.toISOString():null,
+    fe:t.fe?t.fe.toISOString():null,
+    minF:t.minF||1
+  }));
+}
+
+function deserializeTasks(arr){
+  return arr.map(t=>({
+    ...t,
+    pred:[...t.pred], pt:[...t.pt],
+    fs:t.fs?new Date(t.fs):null,
+    fe:t.fe?new Date(t.fe):null
+  }));
+}
+
+function getProjectData(){
+  return {
+    version: 1,
+    name: document.getElementById('projName').value,
+    floors: document.getElementById('floors').value,
+    startDate: document.getElementById('startDate').value,
+    tasks: serializeTasks(),
+    savedAt: new Date().toISOString()
+  };
+}
+
+function loadProjectData(data){
+  if(data.name) document.getElementById('projName').value=data.name;
+  if(data.floors) document.getElementById('floors').value=data.floors;
+  if(data.startDate) document.getElementById('startDate').value=data.startDate;
+  if(data.tasks) tasks=deserializeTasks(data.tasks);
+  undoStack.length=0;
+  redoStack.length=0;
+  updateUndoButtons();
+  calcAll();
+  render();
+}
+
+// SAVE PROJECT — downloads JSON file
+function saveProject(){
+  const data=getProjectData();
+  const name=data.name.replace(/[^a-zA-Z0-9_-]/g,'_')||'Project';
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`${name}_Schedule.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  // Visual feedback
+  const btn=document.querySelector('[onclick="saveProject()"]');
+  const orig=btn.innerHTML;
+  btn.innerHTML='✅ Saved!';
+  btn.style.background='rgba(5,150,105,.6)';
+  setTimeout(()=>{btn.innerHTML=orig;btn.style.background=''},1500);
+}
+
+// LOAD PROJECT — opens file picker
+function loadProject(){
+  document.getElementById('fileLoader').click();
+}
+
+function handleFileLoad(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.tasks||!Array.isArray(data.tasks)){
+        alert('Invalid project file');return;
+      }
+      loadProjectData(data);
+      addMsg(`📂 Project "${data.name}" loaded (${data.tasks.length} tasks)`,'action');
+    }catch(err){
+      alert('Error reading file: '+err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value=''; // reset so same file can be loaded again
+}
+
+// NEW PROJECT — reset to template
+function newProject(){
+  if(!confirm('Start a new project? Current unsaved changes will be lost.'))return;
+  localStorage.removeItem('drake_schedule_autosave');
+  undoStack.length=0;
+  redoStack.length=0;
+  updateUndoButtons();
+  document.getElementById('projName').value='New Project';
+  initTasks();
+  addMsg('📄 New project created','action');
+}
+
+// AUTO-SAVE to localStorage
+function autoSave(){
+  try{
+    const data=getProjectData();
+    localStorage.setItem('drake_schedule_autosave',JSON.stringify(data));
+  }catch(e){/* localStorage full or unavailable */}
+}
+
+// AUTO-LOAD from localStorage on startup
+function autoLoad(){
+  try{
+    const saved=localStorage.getItem('drake_schedule_autosave');
+    if(saved){
+      const data=JSON.parse(saved);
+      if(data.tasks&&data.tasks.length){
+        loadProjectData(data);
+        return true;
+      }
+    }
+  }catch(e){/* ignore */}
+  return false;
+}
+
+// Ctrl+S to save
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveProject()}
+});
+
+// ============================================================
 // INIT
 // ============================================================
-initTasks();
+// Try to load auto-saved project, otherwise start fresh
+if(!autoLoad()){
+  initTasks();
+}
 </script>
 </body>
 </html>

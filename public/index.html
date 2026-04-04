@@ -1082,15 +1082,17 @@ function deleteTask(){
   if(!confirm(`Delete "${t.t}"?\n\nTasks that depend on it will be reconnected to its predecessors automatically.`))return;
   saveState();
   
+  // Copy predecessors before modifying anything
+  const myPreds=[...t.pred];
+  const myPT=[...t.pt];
+  const delId=editingId;
+  
   // Reconnect: any task that had this as predecessor gets this task's predecessors instead
-  const myPreds=t.pred;
-  const myPT=t.pt;
   tasks.forEach(other=>{
-    const idx=other.pred.indexOf(editingId);
+    const idx=other.pred.indexOf(delId);
     if(idx>=0){
       other.pred.splice(idx,1);
       other.pt.splice(idx,1);
-      // Add this task's predecessors (if any) to maintain chain
       myPreds.forEach((pp,pi)=>{
         if(!other.pred.includes(pp)){
           other.pred.push(pp);
@@ -1101,9 +1103,12 @@ function deleteTask(){
   });
   
   // Remove task
-  tasks=tasks.filter(x=>x.id!==editingId);
+  tasks=tasks.filter(x=>x.id!==delId);
   
-  closeModal();
+  // Close modal and re-render
+  editingId=null;
+  editPredsList=[];
+  document.getElementById('editModal').classList.remove('show');
   calcAll();
   render();
 }
@@ -1785,11 +1790,9 @@ function setupDragListeners(){
       return;
     }
     
-    // BAR MOVE (click on bar text or bar itself)
-    if(e.target.classList.contains('bar-text')||e.target===bar){
-      dragState={type:'move',tid,startX:e.clientX,startY:e.clientY,origLeft:bar.offsetLeft,origWidth:bar.offsetWidth,bar,moved:false};
-      e.preventDefault();
-    }
+    // BAR MOVE (click on bar text or bar itself — any part that's not resize/connect)
+    dragState={type:'move',tid,startX:e.clientX,startY:e.clientY,origLeft:bar.offsetLeft,origWidth:bar.offsetWidth,bar,moved:false};
+    e.preventDefault();
   });
   
   document.addEventListener('mousemove',function(e){

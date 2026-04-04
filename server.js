@@ -34,12 +34,16 @@ const db = createClient({
 // LIST PROJECTS
 app.get('/api/projects', async (req, res) => {
   try {
-    const result = await db.execute("SELECT id, name, floors, start_date, created_at, updated_at FROM projects ORDER BY updated_at DESC");
-    const projects = result.rows.map(r => ({
-      id: r.id, name: r.name, floors: r.floors, start_date: r.start_date,
-      created_at: r.created_at, updated_at: r.updated_at,
-      task_count: JSON.parse(r.tasks || '[]').length
-    }));
+    const result = await db.execute("SELECT id, name, floors, start_date, tasks, created_at, updated_at FROM projects ORDER BY updated_at DESC");
+    const projects = result.rows.map(r => {
+      let taskCount = 0;
+      try { taskCount = JSON.parse(r.tasks || '[]').length; } catch(e) {}
+      return {
+        id: r.id, name: r.name, floors: r.floors, start_date: r.start_date,
+        created_at: r.created_at, updated_at: r.updated_at,
+        task_count: taskCount
+      };
+    });
     res.json(projects);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

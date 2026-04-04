@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Drake Construction - Schedule Planner</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -179,6 +180,62 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 
 /* EXPORT MODAL */
 .export-area{width:100%;height:200px;font-family:'Courier New',monospace;font-size:10px;border:1px solid var(--border);border-radius:6px;padding:8px;resize:none}
+
+/* ============================================================
+   MOBILE RESPONSIVE
+   ============================================================ */
+@media(max-width:768px){
+  /* HOME SCREEN */
+  .home-content{grid-template-columns:1fr;padding:16px 20px 40px}
+  .home-header{padding:24px 20px 12px}
+  .home-logo h1{font-size:22px}
+  .home-section{padding:20px}
+  .home-field-row{flex-direction:column;gap:10px}
+  
+  /* TOPBAR */
+  .topbar{padding:8px 12px;flex-wrap:wrap;height:auto;gap:8px}
+  .topbar h1{font-size:13px}
+  .topbar .sub{display:none}
+  .topbar .actions{flex-wrap:wrap;gap:4px}
+  .topbar .actions .btn{padding:5px 8px;font-size:10px}
+  
+  /* CONFIG */
+  .config{padding:10px 12px;flex-direction:column;gap:10px}
+  .config-group input,.config-group select{padding:6px 10px;font-size:12px}
+  .stats{margin-left:0;justify-content:center}
+  .stat .num{font-size:18px}
+  
+  /* TOOLBAR - zoom/filter/phases */
+  .config+div{padding:6px 12px !important;gap:8px !important}
+  .config+div .tbtn{padding:3px 8px;font-size:11px}
+  
+  /* HIDE GANTT VIEW ON MOBILE, SHOW LIST */
+  .main{display:none !important}
+  #listView{display:block !important}
+  
+  /* LIST VIEW */
+  .list-table-wrap{padding:10px 12px}
+  .list-table{font-size:11px}
+  .list-table thead th{padding:8px 6px;font-size:8px}
+  .list-table td{padding:10px 6px}
+  .list-table .lt-complete,.list-table .lt-phase{display:none}
+  .list-table th:nth-child(4),.list-table th:nth-child(5){display:none}
+  
+  /* MODALS */
+  .modal{width:95vw;padding:18px;max-height:90vh}
+  .modal h2{font-size:14px}
+  
+  /* CHAT FLOAT */
+  .chat-fab{width:48px;height:48px;font-size:22px;bottom:16px;right:16px}
+  .chat-float{width:calc(100vw - 32px);right:16px;bottom:76px;height:60vh}
+}
+
+@media(max-width:480px){
+  .topbar .actions .btn{padding:4px 6px;font-size:9px}
+  .home-logo h1{font-size:18px}
+  .list-table .lt-dur{display:none}
+  .list-table th:nth-child(6){display:none}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -2342,6 +2399,8 @@ async function openProject(id){
     document.getElementById('homeScreen').style.display='none';
     document.getElementById('plannerScreen').style.display='flex';
     loadProjectData(data);
+    // On mobile, auto-show list view
+    if(window.innerWidth<=768)setView('list');
   }catch(err){alert('Error: '+err.message)}
 }
 
@@ -2394,6 +2453,8 @@ async function createNewProject(){
     const result=await res.json();
     currentProjectId=result.id;
   }catch(err){console.error('Error creating project:',err)}
+  // On mobile, auto-show list view
+  if(window.innerWidth<=768)setView('list');
 }
 
 async function deleteProject(id,name){

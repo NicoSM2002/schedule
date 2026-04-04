@@ -185,56 +185,73 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
    MOBILE RESPONSIVE
    ============================================================ */
 @media(max-width:768px){
+  /* ALLOW PAGE SCROLL ON MOBILE */
+  body{overflow:auto;height:auto}
+  #plannerScreen{height:auto !important;overflow:visible !important}
+  
   /* HOME SCREEN */
-  .home-content{grid-template-columns:1fr;padding:16px 20px 40px}
-  .home-header{padding:24px 20px 12px}
+  .home-content{grid-template-columns:1fr;padding:16px 16px 40px}
+  .home-header{padding:24px 16px 12px}
   .home-logo h1{font-size:22px}
-  .home-section{padding:20px}
+  .home-section{padding:18px}
   .home-field-row{flex-direction:column;gap:10px}
   
-  /* TOPBAR */
-  .topbar{padding:8px 12px;flex-wrap:wrap;height:auto;gap:8px}
-  .topbar h1{font-size:13px}
+  /* TOPBAR - compact single row */
+  .topbar{padding:6px 10px;flex-wrap:wrap;height:auto;gap:4px}
+  .topbar>div:first-child{width:100%;margin-bottom:2px}
+  .topbar h1{font-size:12px}
   .topbar .sub{display:none}
-  .topbar .actions{flex-wrap:wrap;gap:4px}
-  .topbar .actions .btn{padding:5px 8px;font-size:10px}
+  .topbar .actions{flex-wrap:wrap;gap:3px;width:100%;justify-content:center}
+  .topbar .actions .btn{padding:5px 8px;font-size:9px}
+  .topbar .actions span[style*="width:1px"]{display:none}
   
-  /* CONFIG */
-  .config{padding:10px 12px;flex-direction:column;gap:10px}
-  .config-group input,.config-group select{padding:6px 10px;font-size:12px}
-  .stats{margin-left:0;justify-content:center}
-  .stat .num{font-size:18px}
+  /* CONFIG - horizontal compact */
+  .config{padding:8px 12px;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
+  .config .config-group{flex:1;min-width:120px}
+  .config-group label{font-size:8px}
+  .config-group input,.config-group select{padding:5px 8px;font-size:11px}
+  .stats{margin-left:auto;gap:10px}
+  .stat .num{font-size:16px}
+  .stat .lbl{font-size:7px}
   
-  /* TOOLBAR - zoom/filter/phases */
-  .config+div{padding:6px 12px !important;gap:8px !important}
-  .config+div .tbtn{padding:3px 8px;font-size:11px}
+  /* TOOLBAR - zoom/filter/phases compact */
+  .config+div{padding:6px 10px !important;gap:6px !important;flex-wrap:wrap !important}
+  .config+div .tbtn{padding:2px 6px;font-size:10px}
+  .config+div select{font-size:10px;min-width:100px !important;padding:3px 6px !important}
+  /* Hide phase legend on mobile - save space */
+  .config+div>div:last-child{display:none}
   
-  /* HIDE GANTT VIEW ON MOBILE, SHOW LIST */
-  .main{display:none !important}
-  #listView{display:block !important}
+  /* GANTT VIEW - scrollable horizontally */
+  .main{display:flex !important;height:auto !important;min-height:50vh;overflow:visible}
+  .task-list{display:none !important}
+  .gantt-area{overflow:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:400px}
   
   /* LIST VIEW */
-  .list-table-wrap{padding:10px 12px}
+  .list-view{height:auto !important}
+  .list-table-wrap{padding:8px 10px}
   .list-table{font-size:11px}
-  .list-table thead th{padding:8px 6px;font-size:8px}
-  .list-table td{padding:10px 6px}
-  .list-table .lt-complete,.list-table .lt-phase{display:none}
-  .list-table th:nth-child(4),.list-table th:nth-child(5){display:none}
+  .list-table thead th{padding:8px 5px;font-size:8px;letter-spacing:0}
+  .list-table td{padding:10px 5px}
+  .list-table .lt-complete,.list-table .lt-phase,.list-table .lt-dur{display:none}
+  .list-table th:nth-child(4),.list-table th:nth-child(5),.list-table th:nth-child(6){display:none}
+  .list-table .lt-title{font-size:11px}
+  .list-table .lt-date{font-size:10px}
   
   /* MODALS */
-  .modal{width:95vw;padding:18px;max-height:90vh}
+  .modal{width:95vw;padding:16px;max-height:85vh}
   .modal h2{font-size:14px}
+  .modal .field-row{flex-direction:column;gap:8px}
   
   /* CHAT FLOAT */
   .chat-fab{width:48px;height:48px;font-size:22px;bottom:16px;right:16px}
-  .chat-float{width:calc(100vw - 32px);right:16px;bottom:76px;height:60vh}
+  .chat-float{width:calc(100vw - 32px);right:16px;bottom:76px;height:55vh}
 }
 
 @media(max-width:480px){
-  .topbar .actions .btn{padding:4px 6px;font-size:9px}
+  .topbar .actions .btn{padding:4px 6px;font-size:8px}
   .home-logo h1{font-size:18px}
-  .list-table .lt-dur{display:none}
-  .list-table th:nth-child(6){display:none}
+  .stat .num{font-size:14px}
+  .config .config-group{min-width:100px}
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>

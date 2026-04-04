@@ -9,6 +9,31 @@
 :root{--bg:#f0f2f5;--card:#fff;--primary:#1e3a5f;--accent:#2563eb;--accent2:#059669;--text:#1a2332;--muted:#64748b;--border:#e2e8f0;--row:36px}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:13px}
 
+/* HOME SCREEN */
+.home-screen{min-height:100vh;background:linear-gradient(135deg,#1e3a5f 0%,#0f2440 100%)}
+.home-header{padding:40px 40px 20px;text-align:center}
+.home-logo h1{color:#fff;font-size:28px;font-weight:800;letter-spacing:-.5px}
+.home-logo p{color:rgba(255,255,255,.5);font-size:14px;margin-top:4px}
+.home-content{max-width:900px;margin:0 auto;padding:20px 40px 60px;display:grid;grid-template-columns:1fr 1fr;gap:30px}
+.home-section{background:#fff;border-radius:14px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.home-section h2{font-size:16px;font-weight:700;color:var(--primary);margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid var(--border)}
+.home-field{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.home-field label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.home-field input,.home-field select{padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit}
+.home-field input:focus,.home-field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.home-field-row{display:flex;gap:12px}
+.home-field-row .home-field{flex:1}
+.home-btn{width:100%;padding:12px;font-size:14px;border-radius:8px;margin-top:6px}
+.home-projects{display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto}
+.home-proj-card{display:flex;align-items:center;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;gap:14px}
+.home-proj-card:hover{border-color:var(--accent);background:#f0f7ff;transform:translateY(-1px);box-shadow:0 3px 12px rgba(0,0,0,.08)}
+.home-proj-card .proj-icon{width:42px;height:42px;border-radius:8px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;flex-shrink:0}
+.home-proj-card .proj-info{flex:1}
+.home-proj-card .proj-info .proj-name{font-size:14px;font-weight:600;color:var(--text)}
+.home-proj-card .proj-info .proj-meta{font-size:10px;color:var(--muted);margin-top:2px}
+.home-proj-card .proj-delete{padding:6px 10px;background:none;border:none;color:#ccc;cursor:pointer;font-size:16px;border-radius:6px}
+.home-proj-card .proj-delete:hover{color:#dc2626;background:#fee2e2}
+
 /* TOP BAR */
 .topbar{background:var(--primary);color:#fff;padding:12px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:300;box-shadow:0 2px 12px rgba(0,0,0,.2)}
 .topbar h1{font-size:16px;font-weight:800;letter-spacing:-.3px}
@@ -136,15 +161,58 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 </head>
 <body>
 
+<!-- HOME SCREEN -->
+<div id="homeScreen" class="home-screen">
+  <div class="home-header">
+    <div class="home-logo">
+      <h1>Drake Construction</h1>
+      <p>Schedule Planner</p>
+    </div>
+  </div>
+  <div class="home-content">
+    <div class="home-section">
+      <h2>New Project</h2>
+      <div class="home-new">
+        <div class="home-field">
+          <label>Project Name</label>
+          <input type="text" id="homeNewName" placeholder="e.g. 415 North Star" value="">
+        </div>
+        <div class="home-field-row">
+          <div class="home-field">
+            <label>Floors</label>
+            <select id="homeNewFloors">
+              <option value="1">1 Floor</option>
+              <option value="2" selected>2 Floors</option>
+              <option value="3">3 Floors</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label>Start Date</label>
+            <input type="date" id="homeNewStart" value="2026-01-01">
+          </div>
+        </div>
+        <button class="btn btn-primary home-btn" onclick="createNewProject()">Create Project →</button>
+      </div>
+    </div>
+    <div class="home-section">
+      <h2>My Projects</h2>
+      <div id="homeProjectsList" class="home-projects">
+        <div style="color:var(--muted);padding:20px;text-align:center">Loading projects...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PLANNER (hidden initially) -->
+<div id="plannerScreen" style="display:none">
 <div class="topbar">
   <div>
     <h1>Drake Construction — Schedule Planner</h1>
     <div class="sub">7422 Mountjoy Dr, Huntington Beach, CA 92648 — 714-841-5285</div>
   </div>
   <div class="actions">
-    <button class="btn btn-outline" onclick="newProject()" title="New Project">📄 New</button>
-    <button class="btn btn-outline" onclick="loadProject()" title="Load Project">📂 Load</button>
-    <button class="btn btn-outline" onclick="saveProject()" title="Save Project" style="background:rgba(5,150,105,.3);border-color:#059669">💾 Save</button>
+    <button class="btn btn-outline" onclick="goHome()" title="Back to projects">← Projects</button>
+    <button class="btn btn-outline" onclick="saveToServer()" title="Save" style="background:rgba(5,150,105,.3);border-color:#059669">💾 Save</button>
     <span style="width:1px;height:20px;background:rgba(255,255,255,.2)"></span>
     <button class="btn btn-outline" onclick="undo()" id="undoBtn" disabled style="opacity:.4;padding:7px 10px" title="Undo (Ctrl+Z)">↩</button>
     <button class="btn btn-outline" onclick="redo()" id="redoBtn" disabled style="opacity:.4;padding:7px 10px" title="Redo (Ctrl+Y)">↪</button>
@@ -1832,8 +1900,9 @@ function stopVoice(){
 }
 
 // ============================================================
-// SAVE / LOAD / NEW PROJECT
+// SAVE / LOAD / PROJECT MANAGEMENT
 // ============================================================
+let currentProjectId=null;
 
 function serializeTasks(){
   return tasks.map(t=>({
@@ -1855,18 +1924,17 @@ function deserializeTasks(arr){
 
 function getProjectData(){
   return {
-    version: 1,
     name: document.getElementById('projName').value,
     floors: document.getElementById('floors').value,
-    startDate: document.getElementById('startDate').value,
-    tasks: serializeTasks(),
-    savedAt: new Date().toISOString()
+    start_date: document.getElementById('startDate').value,
+    tasks: serializeTasks()
   };
 }
 
 function loadProjectData(data){
   if(data.name) document.getElementById('projName').value=data.name;
   if(data.floors) document.getElementById('floors').value=data.floors;
+  if(data.start_date) document.getElementById('startDate').value=data.start_date;
   if(data.startDate) document.getElementById('startDate').value=data.startDate;
   if(data.tasks) tasks=deserializeTasks(data.tasks);
   undoStack.length=0;
@@ -1876,98 +1944,143 @@ function loadProjectData(data){
   render();
 }
 
-// SAVE PROJECT — downloads JSON file
-function saveProject(){
-  const data=getProjectData();
-  const name=data.name.replace(/[^a-zA-Z0-9_-]/g,'_')||'Project';
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download=`${name}_Schedule.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  
-  // Visual feedback
-  const btn=document.querySelector('[onclick="saveProject()"]');
-  const orig=btn.innerHTML;
-  btn.innerHTML='✅ Saved!';
-  btn.style.background='rgba(5,150,105,.6)';
-  setTimeout(()=>{btn.innerHTML=orig;btn.style.background=''},1500);
-}
-
-// LOAD PROJECT — opens file picker
-function loadProject(){
-  document.getElementById('fileLoader').click();
-}
-
-function handleFileLoad(event){
-  const file=event.target.files[0];
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      const data=JSON.parse(e.target.result);
-      if(!data.tasks||!Array.isArray(data.tasks)){
-        alert('Invalid project file');return;
-      }
-      loadProjectData(data);
-      addMsg(`📂 Project "${data.name}" loaded (${data.tasks.length} tasks)`,'action');
-    }catch(err){
-      alert('Error reading file: '+err.message);
-    }
-  };
-  reader.readAsText(file);
-  event.target.value=''; // reset so same file can be loaded again
-}
-
-// NEW PROJECT — reset to template
-function newProject(){
-  if(!confirm('Start a new project? Current unsaved changes will be lost.'))return;
-  localStorage.removeItem('drake_schedule_autosave');
-  undoStack.length=0;
-  redoStack.length=0;
-  updateUndoButtons();
-  document.getElementById('projName').value='New Project';
-  initTasks();
-  addMsg('📄 New project created','action');
-}
-
 // AUTO-SAVE to localStorage
 function autoSave(){
   try{
     const data=getProjectData();
+    data.projectId=currentProjectId;
     localStorage.setItem('drake_schedule_autosave',JSON.stringify(data));
-  }catch(e){/* localStorage full or unavailable */}
+  }catch(e){}
 }
 
-// AUTO-LOAD from localStorage on startup
-function autoLoad(){
+// SAVE TO SERVER
+async function saveToServer(){
+  const data=getProjectData();
+  const btn=document.querySelector('[onclick="saveToServer()"]');
   try{
-    const saved=localStorage.getItem('drake_schedule_autosave');
-    if(saved){
-      const data=JSON.parse(saved);
-      if(data.tasks&&data.tasks.length){
-        loadProjectData(data);
-        return true;
-      }
+    if(currentProjectId){
+      await fetch(`/api/projects/${currentProjectId}`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(data)
+      });
+    } else {
+      const res=await fetch('/api/projects',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(data)
+      });
+      const result=await res.json();
+      currentProjectId=result.id;
     }
-  }catch(e){/* ignore */}
-  return false;
+    if(btn){const o=btn.innerHTML;btn.innerHTML='✅ Saved!';btn.style.background='rgba(5,150,105,.6)';setTimeout(()=>{btn.innerHTML=o;btn.style.background=''},1500)}
+  }catch(err){
+    alert('Error saving: '+err.message);
+  }
 }
 
-// Ctrl+S to save
+// HOME SCREEN
+async function loadProjectsList(){
+  const container=document.getElementById('homeProjectsList');
+  try{
+    const res=await fetch('/api/projects');
+    const projects=await res.json();
+    if(!projects.length){
+      container.innerHTML='<div style="color:var(--muted);padding:30px;text-align:center;font-size:13px">No projects yet.<br>Create your first one!</div>';
+      return;
+    }
+    container.innerHTML=projects.map(p=>{
+      const initial=p.name.charAt(0).toUpperCase();
+      const updated=new Date(p.updated_at+'Z').toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
+      const floorsTxt=p.floors==='1'?'1 Floor':p.floors+' Floors';
+      return `<div class="home-proj-card" onclick="openProject('${p.id}')">
+        <div class="proj-icon">${initial}</div>
+        <div class="proj-info">
+          <div class="proj-name">${p.name}</div>
+          <div class="proj-meta">${p.task_count} tasks · ${floorsTxt} · Updated ${updated}</div>
+        </div>
+        <button class="proj-delete" onclick="event.stopPropagation();deleteProject('${p.id}','${p.name}')" title="Delete">🗑</button>
+      </div>`;
+    }).join('');
+  }catch(err){
+    container.innerHTML='<div style="color:#dc2626;padding:20px">Error loading projects</div>';
+  }
+}
+
+async function openProject(id){
+  try{
+    const res=await fetch(`/api/projects/${id}`);
+    const data=await res.json();
+    currentProjectId=id;
+    document.getElementById('homeScreen').style.display='none';
+    document.getElementById('plannerScreen').style.display='block';
+    loadProjectData(data);
+  }catch(err){alert('Error: '+err.message)}
+}
+
+async function createNewProject(){
+  const name=document.getElementById('homeNewName').value.trim();
+  if(!name){alert('Enter a project name');return}
+  const floors=document.getElementById('homeNewFloors').value;
+  const startDate=document.getElementById('homeNewStart').value;
+  
+  // Show planner
+  document.getElementById('homeScreen').style.display='none';
+  document.getElementById('plannerScreen').style.display='block';
+  
+  // Setup planner
+  document.getElementById('projName').value=name;
+  document.getElementById('floors').value=floors;
+  document.getElementById('startDate').value=startDate;
+  currentProjectId=null;
+  initTasks();
+  
+  // Save to server immediately
+  const data=getProjectData();
+  try{
+    const res=await fetch('/api/projects',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data)
+    });
+    const result=await res.json();
+    currentProjectId=result.id;
+  }catch(err){console.error('Error creating project:',err)}
+}
+
+async function deleteProject(id,name){
+  if(!confirm(`Delete project "${name}"? This cannot be undone.`))return;
+  try{
+    await fetch(`/api/projects/${id}`,{method:'DELETE'});
+    loadProjectsList();
+  }catch(err){alert('Error: '+err.message)}
+}
+
+function goHome(){
+  if(!confirm('Go back to projects? Unsaved changes will be lost.'))return;
+  document.getElementById('plannerScreen').style.display='none';
+  document.getElementById('homeScreen').style.display='block';
+  currentProjectId=null;
+  loadProjectsList();
+}
+
+// Ctrl+S to save to server
 document.addEventListener('keydown',function(e){
-  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveProject()}
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveToServer()}
 });
 
+// Auto-save to server every 60 seconds
+setInterval(()=>{
+  if(currentProjectId && document.getElementById('plannerScreen').style.display!=='none'){
+    saveToServer();
+  }
+},60000);
+
 // ============================================================
-// INIT
+// INIT — show home screen
 // ============================================================
-// Try to load auto-saved project, otherwise start fresh
-if(!autoLoad()){
-  initTasks();
-}
+loadProjectsList();
 </script>
+</div><!-- end plannerScreen -->
 </body>
 </html>

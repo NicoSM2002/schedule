@@ -2282,10 +2282,15 @@ function executeAction(act){
       saveState();
       const ch=act.changes||{};
       if(ch.title)t.t=ch.title;
-      if(ch.duration)t.d=ch.duration;
       if(ch.phase)t.ph=ch.phase;
       if(ch.start){
         t.fs=new Date(ch.start+'T12:00:00');
+      }
+      if(ch.duration){
+        t.d=ch.duration;
+      }
+      // Recalculate end date from start + duration
+      if(t.fs){
         t.fe=t.d>1?addBiz(t.fs,t.d-1):new Date(t.fs);
       }
       addMsg(`✅ Tarea "${t.t}" actualizada`,'action');

@@ -2064,7 +2064,8 @@ async function sendChat(){
 
   const schedule=getScheduleSummary();
   
-  const systemPrompt=`You are an AI assistant embedded in a construction schedule planner for Drake Construction. The user manages construction projects.
+  const today=new Date().toISOString().split('T')[0];
+  const systemPrompt=`You are an AI assistant embedded in a construction schedule planner for Drake Construction. The user manages construction projects. Today is ${today}.
 
 CURRENT SCHEDULE (${tasks.length} tasks):
 ${schedule}
@@ -2078,21 +2079,47 @@ The JSON must have:
 - "actions": array of action objects to execute
 
 Action types:
+
 1. ADD: {"type":"add","title":"Task Name","duration":5,"phase":"EX","start":"2026-06-15","end":"2026-06-20","predecessorId":null,"predType":"FS"}
    - start/end are optional. If both given, duration is auto-calculated.
    - predecessorId is optional (ID number of the predecessor task, or null)
+
 2. DELETE: {"type":"delete","taskId":45}
+
 3. EDIT: {"type":"edit","taskId":23,"changes":{"title":"New Name","duration":10,"phase":"RF","start":"2026-05-01"}}
    - changes only includes fields to modify
+
 4. CONNECT: {"type":"connect","fromId":10,"toId":15,"predType":"FS"}
+
 5. DISCONNECT: {"type":"disconnect","fromId":10,"toId":15}
+
 6. INFO: {"type":"info"} - no action, just answering a question
+
+7. SHIFT_ALL: {"type":"shift_all","days":14,"direction":"forward"}
+   - Shifts ALL tasks by N days forward or backward. Use this when user says "move everything forward/back X days/weeks" or "delay the project 2 weeks"
+   - direction: "forward" or "backward"
+
+8. SHIFT_TO: {"type":"shift_to","anchorTaskId":57,"targetDate":"2026-04-06"}
+   - Shifts the ENTIRE schedule so that the specified task starts on the target date. All other tasks move by the same offset.
+   - Use this when user says "move the schedule so that X task starts on Y date" or "I want X to start today"
+
+9. COMPRESS: {"type":"compress","taskIds":[8,9,10,11],"factor":0.8}
+   - Reduces duration of specified tasks by the factor (0.8 = 20% shorter). Minimum 1 day.
+   - Use when user says "compress tasks X through Y by 20%" or "shorten the framing phase"
+
+10. SHIFT_RANGE: {"type":"shift_range","taskIds":[30,31,32,33],"days":7,"direction":"forward"}
+    - Shifts only the specified tasks by N days forward or backward
+
+11. SWAP: {"type":"swap","taskId1":10,"taskId2":11}
+    - Swaps the positions/dates of two tasks
 
 Rules:
 - When the user says "connect A to B" or "A should go before B", fromId=A, toId=B
 - Dates must be YYYY-MM-DD format
 - If user gives a task name, find the closest matching task by name
 - If user asks a question (when does it end, how many tasks, etc), use type "info" with no actions
+- When the user says "move everything so X starts today", use SHIFT_TO with targetDate as today's date (${today})
+- When the user says "delay/advance the project N days/weeks", use SHIFT_ALL
 - Respond in the same language the user writes in (Spanish or English)
 - Be concise in messages`;
 
@@ -2102,7 +2129,7 @@ Rules:
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        max_tokens: 2000,
         system: systemPrompt,
         messages: [{role: "user", content: msg}]
       })
@@ -2231,6 +2258,100 @@ function executeAction(act){
     }
     case 'info':
       break;
+    case 'shift_all':{
+      saveState();
+      const days=act.days||0;
+      const dir=act.direction==='backward'?-1:1;
+      const ms=days*dir*864e5;
+      let count=0;
+      tasks.forEach(t=>{
+        if(t.fs){t.fs=new Date(t.fs.getTime()+ms);count++}
+        if(t.fe){t.fe=new Date(t.fe.getTime()+ms)}
+      });
+      // Also shift project start date
+      const sd=document.getElementById('startDate');
+      if(sd.value){
+        const d=new Date(sd.value+'T12:00:00');
+        d.setDate(d.getDate()+(days*dir));
+        sd.value=d.toISOString().split('T')[0];
+      }
+      addMsg(`✅ Se movieron ${count} tareas ${days} días hacia ${dir>0?'adelante':'atrás'}`,'action');
+      calcAll();render();
+      break;
+    }
+    case 'shift_to':{
+      const anchor=tasks.find(x=>x.id===act.anchorTaskId);
+      if(!anchor){addMsg(`⚠️ Tarea #${act.anchorTaskId} no encontrada`,'error');return}
+      saveState();
+      // Calculate current start of anchor task
+      calcAll();
+      const currentStart=computed[anchor.id]?computed[anchor.id].s:anchor.fs;
+      if(!currentStart){addMsg(`⚠️ No se puede determinar la fecha de inicio de "${anchor.t}"`,'error');return}
+      const target=new Date(act.targetDate+'T12:00:00');
+      const ms=target.getTime()-currentStart.getTime();
+      let count=0;
+      tasks.forEach(t=>{
+        if(t.fs){t.fs=new Date(t.fs.getTime()+ms);count++}
+        if(t.fe){t.fe=new Date(t.fe.getTime()+ms)}
+      });
+      const sd=document.getElementById('startDate');
+      if(sd.value){
+        const d=new Date(sd.value+'T12:00:00');
+        d.setTime(d.getTime()+ms);
+        sd.value=d.toISOString().split('T')[0];
+      }
+      addMsg(`✅ Calendario movido: "${anchor.t}" ahora empieza el ${act.targetDate}. ${count} tareas ajustadas.`,'action');
+      calcAll();render();
+      break;
+    }
+    case 'compress':{
+      if(!act.taskIds||!act.taskIds.length){addMsg(`⚠️ No se especificaron tareas`,'error');return}
+      saveState();
+      const factor=act.factor||0.8;
+      let count=0;
+      act.taskIds.forEach(tid=>{
+        const t=tasks.find(x=>x.id===tid);
+        if(t){
+          const newDur=Math.max(1,Math.round(t.d*factor));
+          t.d=newDur;
+          if(t.fs&&t.fe){t.fe=t.d>1?addBiz(t.fs,t.d-1):new Date(t.fs)}
+          count++;
+        }
+      });
+      addMsg(`✅ ${count} tareas comprimidas al ${Math.round(factor*100)}% de su duración`,'action');
+      calcAll();render();
+      break;
+    }
+    case 'shift_range':{
+      if(!act.taskIds||!act.taskIds.length){addMsg(`⚠️ No se especificaron tareas`,'error');return}
+      saveState();
+      const days=act.days||0;
+      const dir=act.direction==='backward'?-1:1;
+      const ms=days*dir*864e5;
+      let count=0;
+      act.taskIds.forEach(tid=>{
+        const t=tasks.find(x=>x.id===tid);
+        if(t){
+          if(t.fs){t.fs=new Date(t.fs.getTime()+ms);count++}
+          if(t.fe){t.fe=new Date(t.fe.getTime()+ms)}
+        }
+      });
+      addMsg(`✅ ${count} tareas movidas ${days} días hacia ${dir>0?'adelante':'atrás'}`,'action');
+      calcAll();render();
+      break;
+    }
+    case 'swap':{
+      const t1=tasks.find(x=>x.id===act.taskId1);
+      const t2=tasks.find(x=>x.id===act.taskId2);
+      if(!t1||!t2){addMsg(`⚠️ Tareas no encontradas`,'error');return}
+      saveState();
+      const tmp={fs:t1.fs,fe:t1.fe};
+      t1.fs=t2.fs;t1.fe=t2.fe;
+      t2.fs=tmp.fs;t2.fe=tmp.fe;
+      addMsg(`✅ Intercambiadas: "${t1.t}" ↔ "${t2.t}"`,'action');
+      calcAll();render();
+      break;
+    }
     default:
       addMsg(`Acción desconocida: ${act.type}`,'error');
   }

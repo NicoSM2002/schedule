@@ -391,6 +391,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
     <button class="tbtn" onclick="document.getElementById('phaseFilter').value='';applyFilter()">✕</button>
   </div>
   <span style="width:1px;height:16px;background:var(--border)"></span>
+  <!-- TODAY MARKER -->
+  <div style="display:flex;align-items:center;gap:4px">
+    <span style="font-size:9px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.5px">📍 Marker:</span>
+    <input type="date" id="markerDate" style="padding:4px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit" onchange="render()">
+    <button class="tbtn" onclick="setMarkerToday()" title="Set to today" style="font-size:10px">Today</button>
+  </div>
+  <span style="width:1px;height:16px;background:var(--border)"></span>
   <!-- PHASE LEGEND (compact) -->
   <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
     <span style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Phases:</span>
@@ -975,6 +982,42 @@ function render(){
   bb+=`</svg>`;
   gb.innerHTML=bb;
   
+  // TODAY MARKER LINE + GREY OVERLAY
+  const markerInput=document.getElementById('markerDate');
+  if(markerInput&&markerInput.value){
+    const markerDate=new Date(markerInput.value+'T12:00:00');
+    const mx=Math.round((markerDate-dMin)/864e5*PPD);
+    if(mx>0&&mx<TW){
+      // Grey overlay for past
+      const overlay=document.createElement('div');
+      overlay.className='marker-overlay';
+      overlay.style.cssText=`position:absolute;top:0;left:0;width:${mx}px;height:${BH}px;background:rgba(0,0,0,.06);pointer-events:none;z-index:5`;
+      gb.appendChild(overlay);
+      // Red line
+      const line=document.createElement('div');
+      line.className='marker-line';
+      line.style.cssText=`position:absolute;top:0;left:${mx}px;width:2px;height:${BH}px;background:#dc2626;z-index:15;pointer-events:none`;
+      gb.appendChild(line);
+      // Red triangle at top
+      const tri=document.createElement('div');
+      tri.style.cssText=`position:absolute;top:0;left:${mx-5}px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #dc2626;z-index:16;pointer-events:none`;
+      gb.appendChild(tri);
+      // Date label
+      const lbl=document.createElement('div');
+      const mStr=markerDate.toLocaleDateString('en',{month:'short',day:'numeric'});
+      lbl.style.cssText=`position:absolute;top:10px;left:${mx+6}px;font-size:9px;font-weight:700;color:#dc2626;z-index:16;pointer-events:none;white-space:nowrap`;
+      lbl.textContent=mStr;
+      gb.appendChild(lbl);
+      
+      // Also add line to header
+      const gh=document.getElementById('ganttHeader');
+      const hLine=document.createElement('div');
+      hLine.className='marker-line-hdr';
+      hLine.style.cssText=`position:absolute;top:0;left:${mx}px;width:2px;height:100%;background:#dc2626;z-index:15;pointer-events:none`;
+      gh.appendChild(hLine);
+    }
+  }
+  
   // Auto-save to localStorage
   autoSave();
   
@@ -1316,6 +1359,23 @@ function goToDate(){
 // ============================================================
 // FILTER BY PHASE
 // ============================================================
+function setMarkerToday(){
+  const d=new Date();
+  document.getElementById('markerDate').value=d.toISOString().split('T')[0];
+  render();
+  // Scroll gantt to today
+  if(window._renderDMin){
+    const mx=Math.round((d-window._renderDMin)/864e5*PPD);
+    document.getElementById('ganttArea').scrollLeft=Math.max(0,mx-300);
+  }
+}
+
+// Auto-set marker to today on first load
+setTimeout(()=>{
+  const md=document.getElementById('markerDate');
+  if(md&&!md.value)md.value=new Date().toISOString().split('T')[0];
+},100);
+
 function applyFilter(){
   activeFilter=document.getElementById('phaseFilter').value;
   render();

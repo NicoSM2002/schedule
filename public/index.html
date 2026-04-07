@@ -970,23 +970,10 @@ function render(){
       const fy=fr.cy,tox=to.x1-2,toy=to.cy;
       let pts;
       if(Math.abs(fy-toy)<3){
-        // Same row - straight line
         pts=`${fx},${fy} ${tox},${toy}`;
       } else {
-        // Find the rightmost edge of all bars between source and target rows
-        // so the vertical line goes OUTSIDE all bars
-        const minRow=Math.min(fy,toy);
-        const maxRow=Math.max(fy,toy);
-        let maxRight=fx;
-        sorted.forEach(other=>{
-          const ob=bi[other.id];
-          if(!ob)return;
-          if(ob.cy>=minRow && ob.cy<=maxRow){
-            if(ob.x2>maxRight)maxRight=ob.x2;
-          }
-        });
-        const dropX=maxRight+12; // 12px outside the rightmost bar
-        pts=`${fx},${fy} ${dropX},${fy} ${dropX},${toy} ${tox},${toy}`;
+        const midX=fx+10;
+        pts=`${fx},${fy} ${midX},${fy} ${midX},${toy} ${tox},${toy}`;
       }
       bb+=`<g class="dep-group" data-from="${pid}" data-to="${t.id}" data-fname="${predName}" data-tname="${t.t}" data-dtype="${depType}">`;
       bb+=`<polyline class="dep-hitarea" points="${pts}" onclick="deleteDep(${pid},${t.id})" onmouseenter="showDepTip(event,this.parentNode)" onmouseleave="hideDepTip(this.parentNode)"/>`;

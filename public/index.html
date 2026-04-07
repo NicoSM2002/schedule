@@ -136,7 +136,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .tbar.done{opacity:.4}
 .tbar.active-bar{box-shadow:0 2px 8px rgba(0,0,0,.25),inset 0 0 0 2px rgba(255,255,255,.3)}
 .tbar-label{position:absolute;font-size:10px;font-weight:500;color:#4a5568;white-space:nowrap;pointer-events:none;z-index:8}
-.arr-svg{position:absolute;top:0;left:0;z-index:12;pointer-events:none}
+.arr-svg{position:absolute;top:0;left:0;z-index:20;pointer-events:none}
 .arr-svg .dep-group{pointer-events:none}
 .arr-svg .dep-group.hovered polyline:not(.dep-hitarea){stroke:#dc2626;stroke-width:1.5}
 .arr-svg .dep-group.hovered polygon{fill:#dc2626}
@@ -968,15 +968,18 @@ function render(){
       const depType=t.pt[i];
       const fx=depType==='FS'?fr.x2:fr.x1;
       const fy=fr.cy,tox=to.x1-2,toy=to.cy;
-      // Buildertrend style: go down from source, then horizontal to target
       let pts;
       if(Math.abs(fy-toy)<3){
         // Same row - straight line
         pts=`${fx},${fy} ${tox},${toy}`;
+      } else if(tox > fx + 10){
+        // Target is to the right - clean L-shape: go right, then down/up to target row, then right to target
+        const dropX = Math.min(fx + 14, (fx + tox) / 2);
+        pts=`${fx},${fy} ${dropX},${fy} ${dropX},${toy} ${tox},${toy}`;
       } else {
-        // Different rows - L-shaped or Z-shaped path
-        const midX=fx+8;
-        pts=`${fx},${fy} ${midX},${fy} ${midX},${toy} ${tox},${toy}`;
+        // Target is directly below or to the left - go right first, then down, then left to target
+        const escapeX = fx + 14;
+        pts=`${fx},${fy} ${escapeX},${fy} ${escapeX},${toy} ${tox},${toy}`;
       }
       bb+=`<g class="dep-group" data-from="${pid}" data-to="${t.id}" data-fname="${predName}" data-tname="${t.t}" data-dtype="${depType}">`;
       bb+=`<polyline class="dep-hitarea" points="${pts}" onclick="deleteDep(${pid},${t.id})" onmouseenter="showDepTip(event,this.parentNode)" onmouseleave="hideDepTip(this.parentNode)"/>`;

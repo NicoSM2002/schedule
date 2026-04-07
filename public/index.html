@@ -972,14 +972,21 @@ function render(){
       if(Math.abs(fy-toy)<3){
         // Same row - straight line
         pts=`${fx},${fy} ${tox},${toy}`;
-      } else if(tox > fx + 10){
-        // Target is to the right - clean L-shape: go right, then down/up to target row, then right to target
-        const dropX = Math.min(fx + 14, (fx + tox) / 2);
-        pts=`${fx},${fy} ${dropX},${fy} ${dropX},${toy} ${tox},${toy}`;
       } else {
-        // Target is directly below or to the left - go right first, then down, then left to target
-        const escapeX = fx + 14;
-        pts=`${fx},${fy} ${escapeX},${fy} ${escapeX},${toy} ${tox},${toy}`;
+        // Find the rightmost edge of all bars between source and target rows
+        // so the vertical line goes OUTSIDE all bars
+        const minRow=Math.min(fy,toy);
+        const maxRow=Math.max(fy,toy);
+        let maxRight=fx;
+        sorted.forEach(other=>{
+          const ob=bi[other.id];
+          if(!ob)return;
+          if(ob.cy>=minRow && ob.cy<=maxRow){
+            if(ob.x2>maxRight)maxRight=ob.x2;
+          }
+        });
+        const dropX=maxRight+12; // 12px outside the rightmost bar
+        pts=`${fx},${fy} ${dropX},${fy} ${dropX},${toy} ${tox},${toy}`;
       }
       bb+=`<g class="dep-group" data-from="${pid}" data-to="${t.id}" data-fname="${predName}" data-tname="${t.t}" data-dtype="${depType}">`;
       bb+=`<polyline class="dep-hitarea" points="${pts}" onclick="deleteDep(${pid},${t.id})" onmouseenter="showDepTip(event,this.parentNode)" onmouseleave="hideDepTip(this.parentNode)"/>`;

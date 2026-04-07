@@ -2285,13 +2285,32 @@ function executeAction(act){
       if(ch.phase)t.ph=ch.phase;
       if(ch.start){
         t.fs=new Date(ch.start+'T12:00:00');
-      }
-      if(ch.duration){
+        // When start changes, recalculate end from new start + duration
+        const dur=ch.duration||t.d;
+        t.d=dur;
+        t.fe=dur>1?addBiz(t.fs,dur-1):new Date(t.fs);
+      } else if(ch.duration){
+        // When only duration changes, adjust end date by the delta
+        const oldDur=t.d;
+        const delta=ch.duration-oldDur;
         t.d=ch.duration;
-      }
-      // Recalculate end date from start + duration
-      if(t.fs){
-        t.fe=t.d>1?addBiz(t.fs,t.d-1):new Date(t.fs);
+        if(t.fe){
+          if(delta>0){
+            // Adding days — advance end date
+            t.fe=addBiz(t.fe,delta);
+          } else {
+            // Removing days — move end date back
+            let c=new Date(t.fe);
+            let removed=0;
+            while(removed<Math.abs(delta)){
+              c.setDate(c.getDate()-1);
+              if(c.getDay()>0&&c.getDay()<6)removed++;
+            }
+            t.fe=c;
+          }
+        } else if(t.fs){
+          t.fe=t.d>1?addBiz(t.fs,t.d-1):new Date(t.fs);
+        }
       }
       addMsg(`✅ Tarea "${t.t}" actualizada`,'action');
       calcAll();render();

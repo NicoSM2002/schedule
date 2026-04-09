@@ -2626,11 +2626,12 @@ let currentFolder=null; // null = root view
 async function loadProjectsList(){
   const container=document.getElementById('homeProjectsList');
   try{
-    const res=await fetch('/api/projects');
-    const projects=await res.json();
+    const [projRes, foldRes] = await Promise.all([fetch('/api/projects'), fetch('/api/folders')]);
+    const projects=await projRes.json();
+    const serverFolders=await foldRes.json();
     
-    // Collect all folder names
-    const allFolders=new Set();
+    // Merge server folders with any folders referenced by projects
+    const allFolders=new Set(serverFolders);
     projects.forEach(p=>{if(p.folder)allFolders.add(p.folder)});
     window._allFolders=[...allFolders].sort();
     
@@ -2716,15 +2717,15 @@ async function loadProjectsList(){
   }
 }
 
-function createFolder(){
+async function createFolder(){
   const input=document.getElementById('newFolderName');
   const name=input.value.trim();
   if(!name){alert('Enter a folder name');return}
-  if(!window._allFolders)window._allFolders=[];
-  if(window._allFolders.includes(name)){alert('Folder already exists');return}
-  window._allFolders.push(name);
-  input.value='';
-  loadProjectsList();
+  try{
+    await fetch('/api/folders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+    input.value='';
+    loadProjectsList();
+  }catch(err){console.error(err)}
 }
 
 async function moveToFolder(projectId, folder){
@@ -2744,15 +2745,11 @@ async function moveOutOfFolder(projectId){
 
 async function deleteFolder(fname){
   if(!confirm(`Remove folder "${fname}"?\n\nProjects inside will be moved out, not deleted.`))return;
-  // Move all projects out of this folder
-  const res=await fetch('/api/projects');
-  const projects=await res.json();
-  for(const p of projects.filter(p=>p.folder===fname)){
-    await fetch(`/api/projects/${p.id}/folder`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({folder:''})});
-  }
-  window._allFolders=window._allFolders.filter(f=>f!==fname);
-  if(currentFolder===fname)currentFolder=null;
-  loadProjectsList();
+  try{
+    await fetch(`/api/folders/${encodeURIComponent(fname)}`,{method:'DELETE'});
+    if(currentFolder===fname)currentFolder=null;
+    loadProjectsList();
+  }catch(err){console.error(err)}
 }
 
 async function openProject(id){

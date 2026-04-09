@@ -29,7 +29,10 @@ const db = createClient({
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   )`);
-  // Add folder column if it doesn't exist (migration)
+  await db.execute(`CREATE TABLE IF NOT EXISTS folders (
+    name TEXT PRIMARY KEY,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`);
   try { await db.execute("ALTER TABLE projects ADD COLUMN folder TEXT DEFAULT ''"); } catch(e) {}
   console.log('Database ready');
 })();
@@ -108,6 +111,35 @@ app.patch('/api/projects/:id/folder', async (req, res) => {
 });
 
 // CHAT PROXY
+
+// LIST FOLDERS
+app.get('/api/folders', async (req, res) => {
+  try {
+    const result = await db.execute("SELECT name FROM folders ORDER BY name");
+    res.json(result.rows.map(r => r.name));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// CREATE FOLDER
+app.post('/api/folders', async (req, res) => {
+  try {
+    const { name } = req.body;
+    await db.execute({ sql: "INSERT OR IGNORE INTO folders (name) VALUES (?)", args: [name] });
+    res.json({ message: 'Created' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE FOLDER
+app.delete('/api/folders/:name', async (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name);
+    await db.execute({ sql: "UPDATE projects SET folder='' WHERE folder=?", args: [name] });
+    await db.execute({ sql: "DELETE FROM folders WHERE name=?", args: [name] });
+    res.json({ message: 'Deleted' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// CHAT PROXY (actual)
 app.post('/api/chat', async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });

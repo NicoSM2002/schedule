@@ -29,6 +29,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
 .home-proj-card{display:flex;align-items:center;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;gap:14px}
 .home-proj-card:hover{border-color:var(--accent);background:#f0f7ff;transform:translateY(-1px);box-shadow:0 3px 12px rgba(0,0,0,.08)}
 .home-proj-card .proj-icon{width:42px;height:42px;border-radius:8px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;flex-shrink:0}
+.folder-group{margin-bottom:16px;border:1.5px solid var(--border);border-radius:12px;overflow:hidden}
+.folder-header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#f1f5f9;cursor:pointer;user-select:none;transition:background .1s}
+.folder-header:hover{background:#e2e8f0}
+.folder-header .folder-icon{font-size:18px}
+.folder-header .folder-name{flex:1;font-size:13px;font-weight:700;color:var(--text)}
+.folder-header .folder-count{font-size:11px;color:var(--muted);background:#e2e8f0;padding:2px 8px;border-radius:10px}
+.folder-header .folder-toggle{font-size:12px;color:var(--muted);transition:transform .2s}
+.folder-header .folder-toggle.collapsed{transform:rotate(-90deg)}
+.folder-body{padding:8px}
+.folder-body .home-proj-card{margin-bottom:6px}
+.folder-body .home-proj-card:last-child{margin-bottom:0}
 .home-proj-card .proj-info{flex:1}
 .home-proj-card .proj-info .proj-name{font-size:14px;font-weight:600;color:var(--text)}
 .home-proj-card .proj-info .proj-meta{font-size:10px;color:var(--muted);margin-top:2px}
@@ -325,6 +336,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-
     </div>
     <div class="home-section">
       <h2>My Projects</h2>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="text" id="newFolderName" placeholder="New folder name..." style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit">
+        <button class="btn btn-primary" onclick="createFolder()" style="padding:8px 16px;font-size:12px">+ Folder</button>
+      </div>
       <div id="homeProjectsList" class="home-projects">
         <div style="color:var(--muted);padding:20px;text-align:center">Loading projects...</div>
       </div>
@@ -2615,22 +2630,91 @@ async function loadProjectsList(){
       container.innerHTML='<div style="color:var(--muted);padding:30px;text-align:center;font-size:13px">No projects yet.<br>Create your first one!</div>';
       return;
     }
-    container.innerHTML=projects.map(p=>{
+    
+    // Group by folder
+    const folders={};
+    const noFolder=[];
+    const allFolders=new Set();
+    
+    projects.forEach(p=>{
+      const f=p.folder||'';
+      if(f){
+        allFolders.add(f);
+        if(!folders[f])folders[f]=[];
+        folders[f].push(p);
+      } else {
+        noFolder.push(p);
+      }
+    });
+    
+    // Store folders for move dropdown
+    window._allFolders=[...allFolders].sort();
+    
+    function renderCard(p){
       const initial=p.name.charAt(0).toUpperCase();
       const updated=new Date(p.updated_at+'Z').toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
       const floorsTxt=p.floors==='1'?'1 Floor':p.floors+' Floors';
+      const folderOptions=window._allFolders.map(f=>`<option value="${f}"${f===p.folder?' selected':''}>${f}</option>`).join('');
       return `<div class="home-proj-card" onclick="openProject('${p.id}')">
         <div class="proj-icon">${initial}</div>
         <div class="proj-info">
           <div class="proj-name">${p.name}</div>
           <div class="proj-meta">${p.task_count} tasks · ${floorsTxt} · Updated ${updated}</div>
         </div>
+        <select onclick="event.stopPropagation()" onchange="moveToFolder('${p.id}',this.value)" style="padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:10px;cursor:pointer;background:#fff" title="Move to folder">
+          <option value="">📁 No folder</option>
+          ${folderOptions}
+        </select>
         <button class="proj-delete" onclick="event.stopPropagation();deleteProject('${p.id}','${p.name}')" title="Delete">🗑</button>
       </div>`;
-    }).join('');
+    }
+    
+    let html='';
+    
+    // Render folders
+    Object.keys(folders).sort().forEach(fname=>{
+      const projs=folders[fname];
+      html+=`<div class="folder-group">
+        <div class="folder-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.folder-toggle').classList.toggle('collapsed')">
+          <span class="folder-icon">📁</span>
+          <span class="folder-name">${fname}</span>
+          <span class="folder-count">${projs.length}</span>
+          <span class="folder-toggle">▼</span>
+        </div>
+        <div class="folder-body">
+          ${projs.map(renderCard).join('')}
+        </div>
+      </div>`;
+    });
+    
+    // Render projects without folder
+    html+=noFolder.map(renderCard).join('');
+    
+    container.innerHTML=html;
   }catch(err){
     container.innerHTML='<div style="color:#dc2626;padding:20px">Error loading projects</div>';
   }
+}
+
+function createFolder(){
+  const name=document.getElementById('newFolderName').value.trim();
+  if(!name){alert('Enter a folder name');return}
+  // Store in allFolders and refresh
+  if(!window._allFolders)window._allFolders=[];
+  if(!window._allFolders.includes(name))window._allFolders.push(name);
+  document.getElementById('newFolderName').value='';
+  loadProjectsList();
+}
+
+async function moveToFolder(projectId, folder){
+  try{
+    await fetch(`/api/projects/${projectId}/folder`,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({folder})
+    });
+    loadProjectsList();
+  }catch(err){console.error(err)}
 }
 
 async function openProject(id){

@@ -24,22 +24,26 @@ const db = createClient({
     name TEXT NOT NULL,
     floors TEXT DEFAULT '2',
     start_date TEXT DEFAULT '2026-01-01',
+    folder TEXT DEFAULT '',
     tasks TEXT NOT NULL,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   )`);
+  // Add folder column if it doesn't exist (migration)
+  try { await db.execute("ALTER TABLE projects ADD COLUMN folder TEXT DEFAULT ''"); } catch(e) {}
   console.log('Database ready');
 })();
 
 // LIST PROJECTS
 app.get('/api/projects', async (req, res) => {
   try {
-    const result = await db.execute("SELECT id, name, floors, start_date, tasks, created_at, updated_at FROM projects ORDER BY updated_at DESC");
+    const result = await db.execute("SELECT id, name, floors, folder, start_date, tasks, created_at, updated_at FROM projects ORDER BY updated_at DESC");
     const projects = result.rows.map(r => {
       let taskCount = 0;
       try { taskCount = JSON.parse(r.tasks || '[]').length; } catch(e) {}
       return {
-        id: r.id, name: r.name, floors: r.floors, start_date: r.start_date,
+        id: r.id, name: r.name, floors: r.floors, folder: r.folder || '',
+        start_date: r.start_date,
         created_at: r.created_at, updated_at: r.updated_at,
         task_count: taskCount
       };
@@ -64,8 +68,8 @@ app.post('/api/projects', async (req, res) => {
     const { name, floors, start_date, tasks } = req.body;
     const id = 'proj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
     await db.execute({
-      sql: "INSERT INTO projects (id, name, floors, start_date, tasks) VALUES (?, ?, ?, ?, ?)",
-      args: [id, name, floors || '2', start_date || '2026-01-01', JSON.stringify(tasks || [])]
+      sql: "INSERT INTO projects (id, name, floors, folder, start_date, tasks) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [id, name, floors || '2', req.body.folder || '', start_date || '2026-01-01', JSON.stringify(tasks || [])]
     });
     res.json({ id, name });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -88,6 +92,18 @@ app.delete('/api/projects/:id', async (req, res) => {
   try {
     await db.execute({ sql: 'DELETE FROM projects WHERE id = ?', args: [req.params.id] });
     res.json({ message: 'Deleted' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// UPDATE FOLDER
+app.patch('/api/projects/:id/folder', async (req, res) => {
+  try {
+    const { folder } = req.body;
+    await db.execute({
+      sql: "UPDATE projects SET folder=? WHERE id=?",
+      args: [folder || '', req.params.id]
+    });
+    res.json({ message: 'Folder updated' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

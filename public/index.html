@@ -2621,48 +2621,52 @@ async function saveToServer(){
 }
 
 // HOME SCREEN
+let currentFolder=null; // null = root view
+
 async function loadProjectsList(){
   const container=document.getElementById('homeProjectsList');
   try{
     const res=await fetch('/api/projects');
     const projects=await res.json();
-    if(!projects.length){
+    
+    // Collect all folder names
+    const allFolders=new Set();
+    projects.forEach(p=>{if(p.folder)allFolders.add(p.folder)});
+    window._allFolders=[...allFolders].sort();
+    
+    if(!projects.length && !allFolders.size){
       container.innerHTML='<div style="color:var(--muted);padding:30px;text-align:center;font-size:13px">No projects yet.<br>Create your first one!</div>';
       return;
     }
-    
-    // Group by folder
-    const folders={};
-    const noFolder=[];
-    const allFolders=new Set();
-    
-    projects.forEach(p=>{
-      const f=p.folder||'';
-      if(f){
-        allFolders.add(f);
-        if(!folders[f])folders[f]=[];
-        folders[f].push(p);
-      } else {
-        noFolder.push(p);
-      }
-    });
-    
-    // Store folders for move dropdown
-    window._allFolders=[...allFolders].sort();
     
     function renderCard(p){
       const initial=p.name.charAt(0).toUpperCase();
       const updated=new Date(p.updated_at+'Z').toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
       const floorsTxt=p.floors==='1'?'1 Floor':p.floors+' Floors';
-      const folderOptions=window._allFolders.map(f=>`<option value="${f}"${f===p.folder?' selected':''}>${f}</option>`).join('');
       return `<div class="home-proj-card" onclick="openProject('${p.id}')">
         <div class="proj-icon">${initial}</div>
         <div class="proj-info">
           <div class="proj-name">${p.name}</div>
           <div class="proj-meta">${p.task_count} tasks · ${floorsTxt} · Updated ${updated}</div>
         </div>
-        <select onclick="event.stopPropagation()" onchange="moveToFolder('${p.id}',this.value)" style="padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:10px;cursor:pointer;background:#fff" title="Move to folder">
-          <option value="">📁 No folder</option>
+        <button class="proj-delete" onclick="event.stopPropagation();moveOutOfFolder('${p.id}')" title="Remove from folder" style="background:none;border:none;cursor:pointer;font-size:14px;padding:4px">↩</button>
+        <button class="proj-delete" onclick="event.stopPropagation();deleteProject('${p.id}','${p.name}')" title="Delete">🗑</button>
+      </div>`;
+    }
+    
+    function renderCardRoot(p){
+      const initial=p.name.charAt(0).toUpperCase();
+      const updated=new Date(p.updated_at+'Z').toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
+      const floorsTxt=p.floors==='1'?'1 Floor':p.floors+' Floors';
+      const folderOptions=window._allFolders.map(f=>`<option value="${f}">${f}</option>`).join('');
+      return `<div class="home-proj-card" onclick="openProject('${p.id}')">
+        <div class="proj-icon">${initial}</div>
+        <div class="proj-info">
+          <div class="proj-name">${p.name}</div>
+          <div class="proj-meta">${p.task_count} tasks · ${floorsTxt} · Updated ${updated}</div>
+        </div>
+        <select onclick="event.stopPropagation()" onchange="moveToFolder('${p.id}',this.value)" style="padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:10px;cursor:pointer;background:#fff;max-width:90px" title="Move to folder">
+          <option value="">📁 Move to...</option>
           ${folderOptions}
         </select>
         <button class="proj-delete" onclick="event.stopPropagation();deleteProject('${p.id}','${p.name}')" title="Delete">🗑</button>
@@ -2671,24 +2675,40 @@ async function loadProjectsList(){
     
     let html='';
     
-    // Render folders
-    Object.keys(folders).sort().forEach(fname=>{
-      const projs=folders[fname];
-      html+=`<div class="folder-group">
-        <div class="folder-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.folder-toggle').classList.toggle('collapsed')">
-          <span class="folder-icon">📁</span>
-          <span class="folder-name">${fname}</span>
-          <span class="folder-count">${projs.length}</span>
-          <span class="folder-toggle">▼</span>
-        </div>
-        <div class="folder-body">
-          ${projs.map(renderCard).join('')}
-        </div>
+    if(currentFolder){
+      // INSIDE A FOLDER - show back button + folder projects
+      const folderProjects=projects.filter(p=>p.folder===currentFolder);
+      html+=`<div onclick="currentFolder=null;loadProjectsList()" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;color:var(--accent);font-size:13px;font-weight:600;margin-bottom:8px;border-radius:8px;transition:background .1s" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''">
+        ← Back to all projects
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;margin-bottom:12px">
+        <span style="font-size:22px">📁</span>
+        <span style="font-size:16px;font-weight:700;color:var(--text)">${currentFolder}</span>
+        <span style="font-size:11px;color:var(--muted);background:#e2e8f0;padding:2px 10px;border-radius:10px">${folderProjects.length} projects</span>
       </div>`;
-    });
-    
-    // Render projects without folder
-    html+=noFolder.map(renderCard).join('');
+      html+=folderProjects.map(renderCard).join('');
+      if(!folderProjects.length){
+        html+='<div style="color:var(--muted);padding:20px;text-align:center;font-size:12px">Empty folder</div>';
+      }
+    } else {
+      // ROOT VIEW - show folders as cards + loose projects
+      // Folders first
+      window._allFolders.forEach(fname=>{
+        const count=projects.filter(p=>p.folder===fname).length;
+        html+=`<div class="home-proj-card" onclick="currentFolder='${fname}';loadProjectsList()" style="background:#f8fafc">
+          <div class="proj-icon" style="background:#64748b;font-size:20px">📁</div>
+          <div class="proj-info">
+            <div class="proj-name">${fname}</div>
+            <div class="proj-meta">${count} project${count!==1?'s':''}</div>
+          </div>
+          <button class="proj-delete" onclick="event.stopPropagation();deleteFolder('${fname}')" title="Delete folder" style="background:none;border:none;cursor:pointer;font-size:14px;padding:4px;color:#94a3b8">✕</button>
+        </div>`;
+      });
+      
+      // Loose projects (no folder)
+      const loose=projects.filter(p=>!p.folder);
+      html+=loose.map(renderCardRoot).join('');
+    }
     
     container.innerHTML=html;
   }catch(err){
@@ -2697,12 +2717,13 @@ async function loadProjectsList(){
 }
 
 function createFolder(){
-  const name=document.getElementById('newFolderName').value.trim();
+  const input=document.getElementById('newFolderName');
+  const name=input.value.trim();
   if(!name){alert('Enter a folder name');return}
-  // Store in allFolders and refresh
   if(!window._allFolders)window._allFolders=[];
-  if(!window._allFolders.includes(name))window._allFolders.push(name);
-  document.getElementById('newFolderName').value='';
+  if(window._allFolders.includes(name)){alert('Folder already exists');return}
+  window._allFolders.push(name);
+  input.value='';
   loadProjectsList();
 }
 
@@ -2715,6 +2736,23 @@ async function moveToFolder(projectId, folder){
     });
     loadProjectsList();
   }catch(err){console.error(err)}
+}
+
+async function moveOutOfFolder(projectId){
+  await moveToFolder(projectId,'');
+}
+
+async function deleteFolder(fname){
+  if(!confirm(`Remove folder "${fname}"?\n\nProjects inside will be moved out, not deleted.`))return;
+  // Move all projects out of this folder
+  const res=await fetch('/api/projects');
+  const projects=await res.json();
+  for(const p of projects.filter(p=>p.folder===fname)){
+    await fetch(`/api/projects/${p.id}/folder`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({folder:''})});
+  }
+  window._allFolders=window._allFolders.filter(f=>f!==fname);
+  if(currentFolder===fname)currentFolder=null;
+  loadProjectsList();
 }
 
 async function openProject(id){
